@@ -104,6 +104,13 @@ npm run preview
 slowest (~50 s on a modern Mac to render 124k pages). Both are fully offline
 once the GCIDE clone is in place.
 
+## Hosting
+
+Production is deployed to **GitHub Pages** via the GitHub Actions workflow in
+`.github/workflows/`. The custom domain is configured through `public/CNAME`.
+Because the site is fully static (`output: 'static'` in `astro.config.mjs`),
+the deploy is just an upload of `dist/` — no server, no backend.
+
 ## Known limitations
 
 - **"Serendipity" is not in the dictionary.** It's not a parser bug — the word

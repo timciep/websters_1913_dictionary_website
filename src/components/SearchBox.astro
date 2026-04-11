@@ -15,6 +15,7 @@
 
 <script>
   import MiniSearch from 'minisearch';
+  import posthog from 'posthog-js';
 
   interface Row { s: string; h: string; p?: string; d?: string }
 
@@ -23,6 +24,14 @@
   let mini: MiniSearch<Row> | null = null;
   let rows: Row[] = [];
   let selected = -1;
+  let lastHits: Row[] = [];
+  let lastQuery = '';
+  let performedTimer: number | null = null;
+  let performedQuery = '';
+
+  function capture(event: string, props: Record<string, unknown>) {
+    if (import.meta.env.PROD) posthog.capture(event, props);
+  }
 
   async function ensureLoaded() {
     if (mini) return;
@@ -69,7 +78,14 @@
       .replace(/"/g, '&quot;');
   }
 
-  function go(slug: string) {
+  function go(slug: string, method: 'click' | 'enter', position: number) {
+    capture('search_result_selected', {
+      query: lastQuery,
+      slug,
+      position,
+      method,
+      result_count: lastHits.length,
+    });
     window.location.href = `/word/${slug}/`;
   }
 
@@ -78,10 +94,27 @@
   input.addEventListener('input', async () => {
     await ensureLoaded();
     const q = input.value.trim();
-    if (!q || !mini) { render([]); return; }
+    lastQuery = q;
+    if (!q || !mini) { lastHits = []; render([]); return; }
     const hits = mini.search(q) as unknown as Row[];
+    lastHits = hits;
     render(hits);
+    schedulePerformed(q, hits.length);
   });
+
+  function schedulePerformed(q: string, count: number) {
+    if (performedTimer !== null) window.clearTimeout(performedTimer);
+    performedTimer = window.setTimeout(() => {
+      if (q === performedQuery) return;
+      performedQuery = q;
+      capture('search_performed', {
+        query: q,
+        query_length: q.length,
+        result_count: count,
+        has_results: count > 0,
+      });
+    }, 600);
+  }
 
   input.addEventListener('keydown', (e) => {
     const items = list.querySelectorAll('li');
@@ -95,9 +128,10 @@
       updateSelection(items);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const target = selected >= 0 ? items[selected] : items[0];
+      const index = selected >= 0 ? selected : 0;
+      const target = items[index];
       const slug = target?.getAttribute('data-slug');
-      if (slug) go(slug);
+      if (slug) go(slug, 'enter', index);
     } else if (e.key === 'Escape') {
       render([]);
       input.blur();
@@ -114,7 +148,8 @@
     const li = (e.target as HTMLElement).closest('li');
     if (!li) return;
     const slug = li.getAttribute('data-slug');
-    if (slug) go(slug);
+    const index = Number(li.getAttribute('data-i') ?? '0');
+    if (slug) go(slug, 'click', index);
   });
 
   document.addEventListener('click', (e) => {
