@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "astro": "^4.16.0",
-    "minisearch": "^7.1.0"
+    "minisearch": "^7.1.0",
+    "posthog-js": "^1.367.0"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",

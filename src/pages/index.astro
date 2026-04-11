@@ -1,6 +1,5 @@
 ---
 import Base from '../layouts/Base.astro';
-import SearchBox from '../components/SearchBox.astro';
 import { loadAllEntries } from '../lib/entry';
 
 const pages = await loadAllEntries();
@@ -12,8 +11,7 @@ const count = formTotal.toLocaleString('en-US');
     A complete, browsable copy of <em>Webster's Revised Unabridged Dictionary</em>
     of 1913 — {count} headwords, set in a serif typeface as in the original book.
   </p>
-  <SearchBox />
   <p style="color:var(--ink-soft);font-size:0.9rem">
-    Type to search; use ↑ ↓ to navigate, Enter to open, Esc to dismiss.
+    Type in the search box above; use ↑ ↓ to navigate, Enter to open, Esc to dismiss.
   </p>
 </Base>

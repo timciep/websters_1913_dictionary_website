@@ -124,7 +124,7 @@ header.site h1 a {
 /* Search box */
 .search {
   position: relative;
-  margin: 2rem 0;
+  margin: 0.75rem 0 0;
 }
 .search input {
   width: 100%;

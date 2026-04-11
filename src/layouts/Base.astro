@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import SearchBox from '../components/SearchBox.astro';
 interface Props {
   title: string;
 }
@@ -11,11 +12,21 @@ const { title } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    {import.meta.env.PROD && (
+      <script>
+        import posthog from 'posthog-js';
+        posthog.init('phc_GfY3dabf0Wl6qxjCqqCz8mXtbiRq9A9OuQhTX4CqpSr', {
+          api_host: 'https://us.i.posthog.com',
+          defaults: '2026-01-30',
+        });
+      </script>
+    )}
   </head>
   <body>
     <div class="container">
       <header class="site">
         <h1><a href="/">Webster's Revised Unabridged Dictionary &middot; 1913</a></h1>
+        <SearchBox />
       </header>
       <main>
         <slot />
