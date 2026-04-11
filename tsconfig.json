@@ -1,0 +1,13 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@lib/*": ["src/lib/*"],
+      "@components/*": ["src/components/*"]
+    },
+    "types": ["node"]
+  },
+  "include": ["src", "data-pipeline", "astro.config.mjs"],
+  "exclude": ["dist", "data-pipeline/vendor", "node_modules"]
+}

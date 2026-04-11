@@ -1,0 +1,40 @@
+---
+import type { EntryPage } from '../lib/entry';
+import { renderDefinition } from '../lib/crossref';
+
+interface Props {
+  page: EntryPage;
+  knownSlugs: Set<string>;
+}
+const { page, knownSlugs } = Astro.props;
+---
+<article class="entry">
+  <h2 class="headword">{page.headword}</h2>
+
+  {page.forms.map((form, idx) => (
+    <section class="form" data-form-index={idx}>
+      {form.pronunciation && <p class="pron">{form.pronunciation}</p>}
+      {form.partOfSpeech && <p class="pos">{form.partOfSpeech}</p>}
+      {form.etymology && <p class="ety">{form.etymology}</p>}
+
+      {form.senses.map((sense) => (
+        <div class="sense">
+          <div class="num">{sense.number ?? ''}</div>
+          <div class="body">
+            <Fragment set:html={renderDefinition(sense.definition, knownSlugs)} />
+            {sense.quotations.map((q) => (
+              <div class="quote">
+                <span>{q.text}</span>
+                {q.author && <span class="author">— {q.author}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {form.variants.length > 0 && (
+        <p class="variants">Also: {form.variants.join(', ')}</p>
+      )}
+    </section>
+  ))}
+</article>

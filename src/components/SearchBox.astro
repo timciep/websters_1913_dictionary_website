@@ -1,0 +1,123 @@
+---
+// Vanilla client-side search island. Loads /search-index.json on first focus,
+// builds a MiniSearch index, and shows autocomplete results.
+---
+<div class="search">
+  <input
+    id="q"
+    type="search"
+    autocomplete="off"
+    placeholder="Search the dictionary…"
+    aria-label="Search the dictionary"
+  />
+  <ul id="results" class="results" hidden></ul>
+</div>
+
+<script>
+  import MiniSearch from 'minisearch';
+
+  interface Row { s: string; h: string; p?: string; d?: string }
+
+  const input = document.getElementById('q') as HTMLInputElement;
+  const list = document.getElementById('results') as HTMLUListElement;
+  let mini: MiniSearch<Row> | null = null;
+  let rows: Row[] = [];
+  let selected = -1;
+
+  async function ensureLoaded() {
+    if (mini) return;
+    const res = await fetch('/search-index.json');
+    rows = (await res.json()) as Row[];
+    mini = new MiniSearch<Row>({
+      idField: 's',
+      fields: ['h'],
+      storeFields: ['s', 'h', 'p', 'd'],
+      searchOptions: {
+        prefix: true,
+        fuzzy: 0.15,
+        boost: { h: 2 },
+      },
+    });
+    mini.addAll(rows);
+  }
+
+  function render(items: Row[]) {
+    if (items.length === 0) {
+      list.hidden = true;
+      list.innerHTML = '';
+      selected = -1;
+      return;
+    }
+    list.hidden = false;
+    list.innerHTML = items
+      .slice(0, 10)
+      .map((r, i) => {
+        const pos = r.p ? `<span class="hit-pos">${escape(r.p)}</span>` : '';
+        return `<li role="option" data-slug="${r.s}" data-i="${i}">
+          <span class="hit-hw">${escape(r.h)}</span>${pos}
+        </li>`;
+      })
+      .join('');
+    selected = -1;
+  }
+
+  function escape(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function go(slug: string) {
+    window.location.href = `/word/${slug}/`;
+  }
+
+  input.addEventListener('focus', () => { void ensureLoaded(); });
+
+  input.addEventListener('input', async () => {
+    await ensureLoaded();
+    const q = input.value.trim();
+    if (!q || !mini) { render([]); return; }
+    const hits = mini.search(q) as unknown as Row[];
+    render(hits);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    const items = list.querySelectorAll('li');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selected = Math.min(items.length - 1, selected + 1);
+      updateSelection(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selected = Math.max(-1, selected - 1);
+      updateSelection(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const target = selected >= 0 ? items[selected] : items[0];
+      const slug = target?.getAttribute('data-slug');
+      if (slug) go(slug);
+    } else if (e.key === 'Escape') {
+      render([]);
+      input.blur();
+    }
+  });
+
+  function updateSelection(items: NodeListOf<Element>) {
+    items.forEach((el, i) => {
+      el.setAttribute('aria-selected', i === selected ? 'true' : 'false');
+    });
+  }
+
+  list.addEventListener('click', (e) => {
+    const li = (e.target as HTMLElement).closest('li');
+    if (!li) return;
+    const slug = li.getAttribute('data-slug');
+    if (slug) go(slug);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!(e.target as HTMLElement).closest('.search')) render([]);
+  });
+</script>

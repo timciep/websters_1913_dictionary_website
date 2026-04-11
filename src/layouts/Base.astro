@@ -1,0 +1,30 @@
+---
+import '../styles/global.css';
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="container">
+      <header class="site">
+        <h1><a href="/">Webster's Revised Unabridged Dictionary &middot; 1913</a></h1>
+      </header>
+      <main>
+        <slot />
+      </main>
+      <footer class="site">
+        Text from the public-domain
+        <a href="https://gcide.gnu.org.ua/">GNU Collaborative International Dictionary of English</a>,
+        derived from Webster's Revised Unabridged Dictionary (1913).
+      </footer>
+    </div>
+  </body>
+</html>

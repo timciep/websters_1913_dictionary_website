@@ -1,0 +1,20 @@
+---
+import Base from '../../layouts/Base.astro';
+import Definition from '../../components/Definition.astro';
+import { loadAllEntries, loadSlugSet, type EntryPage } from '../../lib/entry';
+
+export async function getStaticPaths() {
+  const pages = await loadAllEntries();
+  const knownSlugs = await loadSlugSet();
+  return pages.map((page) => ({
+    params: { slug: page.slug },
+    props: { page, knownSlugs },
+  }));
+}
+
+interface Props { page: EntryPage; knownSlugs: Set<string> }
+const { page, knownSlugs } = Astro.props;
+---
+<Base title={`${page.headword} — Webster's 1913`}>
+  <Definition page={page} knownSlugs={knownSlugs} />
+</Base>
