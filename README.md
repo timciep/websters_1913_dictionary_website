@@ -15,6 +15,8 @@ Gutenberg.
 
 [gcide]: https://gcide.gnu.org.ua/
 
+![Webster's 1913 screenshot](https://www.timcieplowski.com/img/websters_screenshot.png)
+
 ## Features
 
 - **One page per headword, zero JavaScript.** Every entry is pre-rendered to
