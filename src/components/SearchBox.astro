@@ -152,13 +152,21 @@
     });
   }
 
-  list.addEventListener('click', (e) => {
+  function navigateFromResult(e: Event) {
     const li = (e.target as HTMLElement).closest('li');
     if (!li) return;
     const slug = li.getAttribute('data-slug');
     const index = Number(li.getAttribute('data-i') ?? '0');
-    if (slug) go(slug, 'click', index);
-  });
+    if (!slug) return;
+    e.preventDefault();
+    go(slug, 'click', index);
+  }
+  // On mobile, the first tap on a result can blur the input and dismiss the
+  // keyboard — the viewport reflows and the click gets eaten, so the user has
+  // to tap again. Navigate on touchstart so the action fires before the
+  // keyboard dismissal disrupts the tap. (Same pattern as the word popover.)
+  list.addEventListener('touchstart', navigateFromResult, { passive: false });
+  list.addEventListener('click', navigateFromResult);
 
   document.addEventListener('click', (e) => {
     if (!(e.target as HTMLElement).closest('.search')) render([]);
