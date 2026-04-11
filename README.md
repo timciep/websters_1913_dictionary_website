@@ -30,6 +30,11 @@ Gutenberg.
   *Skr.*, *OHG.*, …) are wrapped in `<abbr>` elements so hovering or
   focusing them reveals the expansion. Part-of-speech / inflection stubs
   like *imp. of run* or *p. p. of write* get the same treatment.
+- **Select-a-word lookup.** Double-click, long-press (mouse or touch), or
+  otherwise select any single word on any page and a small pill appears
+  linking straight to that headword's entry — so you can follow the
+  dictionary's own trail without retyping. Powered entirely by the
+  already-loaded search index, so no extra bytes.
 - **Homographs collected on one page.** Every spelling or part-of-speech
   variant that slugifies to the same value is grouped onto a single entry
   page — `/word/set/` lists the noun, the transitive verb, the intransitive

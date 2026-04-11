@@ -222,6 +222,29 @@ header.site h1 a {
   margin-top: 0.1rem;
 }
 
+/* Word-selection lookup popover */
+.word-popover {
+  position: absolute;
+  background: var(--ink);
+  color: var(--bg);
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: var(--serif);
+  line-height: 1.3;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  z-index: 20;
+  white-space: nowrap;
+  max-width: calc(100vw - 1rem);
+}
+.word-popover a {
+  color: var(--bg);
+  border-bottom: 1px solid rgba(253, 250, 243, 0.45);
+}
+.word-popover a:hover {
+  border-bottom-color: var(--bg);
+}
+
 /* Homepage features */
 .features {
   margin-top: 2rem;
