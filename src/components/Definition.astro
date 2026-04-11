@@ -2,6 +2,7 @@
 import type { EntryPage } from '../lib/entry';
 import { renderDefinition } from '../lib/crossref';
 import { expandPos } from '../lib/pos';
+import { formatAuthor } from '../lib/authors';
 
 interface Props {
   page: EntryPage;
@@ -35,7 +36,7 @@ const { page, knownSlugs } = Astro.props;
             {sense.quotations.map((q) => (
               <div class="quote">
                 <span>{q.text}</span>
-                {q.author && <span class="author">— {q.author}</span>}
+                {q.author && <span class="author">— {formatAuthor(q.author)}</span>}
               </div>
             ))}
           </div>

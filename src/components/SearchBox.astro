@@ -30,7 +30,7 @@
   let performedQuery = '';
 
   function capture(event: string, props: Record<string, unknown>) {
-    if (import.meta.env.PROD) posthog.capture(event, props);
+    if (import.meta.env.PROD) posthog.capture(`dictionary_${event}`, props);
   }
 
   async function ensureLoaded() {

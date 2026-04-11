@@ -35,6 +35,8 @@ const ABBR_HINTS: Array<[RegExp, string]> = [
   [/\bFig\./g, 'figuratively'],
   [/\bProb\./g, 'probably'],
   [/\bPref\./g, 'prefix'],
+  [/\bfr\./g, 'from'],
+  [/\bv\.\s?t\./g, 'transitive verb'],
   // Language abbreviations (etymology brackets)
   [/\bOF\./g, 'Old French'],
   [/\bOE\./g, 'Old English'],
@@ -60,6 +62,8 @@ const ABBR_HINTS: Array<[RegExp, string]> = [
   [/\bSw\./g, 'Swedish'],
   [/\bPers\./g, 'Persian'],
   [/\bTurk\./g, 'Turkish'],
+  [/\bF\./g, 'French'],
+  [/\bL\./g, 'Latin'],
 ];
 
 // Inflection abbreviations that introduce a "form-of" pointer in cross-

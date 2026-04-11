@@ -222,6 +222,24 @@ header.site h1 a {
   margin-top: 0.1rem;
 }
 
+/* Homepage features */
+.features {
+  margin-top: 2rem;
+}
+.features ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.features li {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.features li strong {
+  font-weight: 600;
+}
+
 footer.site {
   border-top: 1px solid var(--rule);
   padding-top: 1rem;

@@ -7,11 +7,34 @@ const formTotal = pages.reduce((n, p) => n + p.forms.length, 0);
 const count = formTotal.toLocaleString('en-US');
 ---
 <Base title="Webster's 1913 Dictionary">
-  <p style="font-size:1.1rem;line-height:1.6">
-    A complete, browsable copy of <em>Webster's Revised Unabridged Dictionary</em>
-    of 1913 — {count} headwords.
+  <p style="font-size:1.1rem; line-height:1.6; margin-bottom: 0.5rem;">
+    A complete, browsable copy of <a href="https://en.wikipedia.org/wiki/Webster%27s_Dictionary#:~:text=1913%20edition" target="_blank" rel="noopener noreferrer"><em>Webster's Revised Unabridged Dictionary</em>
+    of 1913</a> — {count} headwords.
   </p>
-  <p style="color:var(--ink-soft);font-size:0.9rem">
-    Type in the search box above; use ↑ ↓ to navigate, Enter to open, Esc to dismiss.
+
+  <p style="font-size:0.8rem; color:var(--ink-soft); margin-top: 0rem; margin-left: 1rem;">
+    James Somers on <a href="https://jsomers.net/blog/dictionary" target="_blank" rel="noopener noreferrer">why you should use this&nbsp;dictionary</a>.
   </p>
+
+  
+
+  <section class="features">
+    <ul>
+      <li>
+        <strong>Instant autocomplete.</strong> Start typing and results
+        appear as you go — search runs entirely in your browser, so it
+        works offline after the first visit.
+      </li>
+      <li>
+        <strong>Clickable cross-references.</strong> When a definition
+        points you to another word, it's a link. Follow the dictionary's
+        own trail from entry to entry.
+      </li>
+      <li>
+        <strong>Abbreviation hints.</strong> Hover (or tap) scholarly
+        shorthand like <em>Cf.</em>, <em>e.g.</em>, <em>OF.</em>, or
+        <em>imp. of</em> to see what it stands for.
+      </li>
+    </ul>
+  </section>
 </Base>

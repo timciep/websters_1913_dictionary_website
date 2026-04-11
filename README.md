@@ -12,6 +12,35 @@ Gutenberg.
 
 [gcide]: https://gcide.gnu.org.ua/
 
+## Features
+
+- **One page per headword, zero JavaScript.** Every entry is pre-rendered to
+  its own static HTML page at build time. Reading a definition ships no JS,
+  no tracking, no web fonts — just the text of the dictionary.
+- **Client-side autocomplete search.** A MiniSearch index over all 124k
+  headwords is fetched lazily on first focus of the search box, giving
+  prefix-matching autocomplete with a small fuzzy tolerance and no server.
+- **Linkified cross-references.** `<er>...</er>` tags inside definitions are
+  resolved against the full slug set at render time. If the target exists
+  the word becomes a link to its entry page; if it doesn't, it falls back
+  to italics rather than a broken link. So on `/word/aard-wolf/` the
+  mention of *Proteles* is a live link to `/word/proteles/`.
+- **Tooltips on scholarly abbreviations.** Shorthands like *Cf.*, *e.g.*,
+  *i.e.*, *viz.*, and language codes from etymology brackets (*OF.*, *Gr.*,
+  *Skr.*, *OHG.*, …) are wrapped in `<abbr>` elements so hovering or
+  focusing them reveals the expansion. Part-of-speech / inflection stubs
+  like *imp. of run* or *p. p. of write* get the same treatment.
+- **Homographs collected on one page.** Every spelling or part-of-speech
+  variant that slugifies to the same value is grouped onto a single entry
+  page — `/word/set/` lists the noun, the transitive verb, the intransitive
+  verb, and the adjective together, in the order GCIDE declared them.
+  URLs stay stable no matter how many senses get added later.
+- **Unicode-correct headwords and slugs.** Ligatures (`æ`, `œ`, `ß`, `þ`,
+  `ð`) are explicitly expanded before NFKD normalization, so *ænigma* and
+  *aenigma* resolve to the same page and the slug is always pure ASCII.
+- **Book-like typography.** A single hand-written ~150-line stylesheet, no
+  CSS framework, no tracking, no cookies.
+
 ## How it works
 
 There are two halves to the project: a one-shot **data pipeline** that turns
@@ -62,9 +91,13 @@ their quotations (`<q>`/`<qau>`). Cross-reference tags `<er>...</er>` inside
 definitions are preserved on disk and linkified at render time so the link
 target can be checked against the full slug set.
 
-Homographs (multiple entries for the same headword, e.g. five different `set`s)
-are disambiguated by appending `-2`, `-3`, … in source order: the first stays
-as `/word/set/`, the rest become `/word/set-2/`, `/word/set-3/`, etc.
+Homographs (multiple entries for the same headword, e.g. the several different
+`set`s) are **collected onto a single page**. Every `RawEntry` whose headword
+slugifies to the same value is appended to one `EntryPageRecord` as an
+additional `forms[]` entry, in the order GCIDE declared them. So `/word/set/`
+renders the noun, the transitive verb, the intransitive verb, and the
+adjective on one page — there is no `/word/set-2/`. URLs stay stable as new
+senses get added; only the on-page order changes.
 
 ### Site details
 
