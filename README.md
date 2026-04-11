@@ -1,5 +1,8 @@
 # Webster's 1913
 
+**Live site:** <https://websters1913.timcieplowski.com>
+**Blog post:** <https://www.timcieplowski.com/blog/websters-1913/>
+
 A static website serving the complete text of *Webster's Revised Unabridged
 Dictionary* (1913) — 124,186 headwords, browsable as one HTML page per word,
 with client-side autocomplete search and cross-reference links between
