@@ -218,8 +218,6 @@ A fresh checkout requires three commands: `npm install`,
   do it well. The `vendor/` directory should hold *only* `gnu_gcide`.
 - **Don't add a CSS framework.** The site is intentionally a single
   ~150-line stylesheet. The whole aesthetic is "looks like a book."
-- **Don't make entry pages stateful or interactive.** The only client JS is
-  the search island on `index.astro`. Entry pages should ship zero JS.
 - **Don't add server-side rendering or a backend.** This is a static site by
   design — `output: 'static'` in `astro.config.mjs` is load-bearing for
   hosting cost and simplicity.

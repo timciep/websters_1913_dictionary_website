@@ -61,10 +61,41 @@ header.site h1 a {
 }
 
 /* Entry page */
+.entry .entry-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1rem;
+}
 .entry h2.headword {
   font-size: 2.25rem;
-  margin: 0 0 1rem;
+  margin: 0;
   font-weight: 600;
+}
+.entry .share {
+  flex: 0 0 auto;
+  background: none;
+  border: 0;
+  padding: 0.25rem 0;
+  margin: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s ease-out, color 0.15s ease-out;
+}
+.entry .share:hover,
+.entry .share:focus-visible {
+  opacity: 1;
+  color: var(--link);
+  outline: none;
+}
+.entry .share.copied {
+  opacity: 1;
+  color: var(--accent);
 }
 .entry .form + .form {
   margin-top: 1.75rem;

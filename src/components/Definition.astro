@@ -11,7 +11,12 @@ interface Props {
 const { page, knownSlugs } = Astro.props;
 ---
 <article class="entry">
-  <h2 class="headword">{page.headword}</h2>
+  <div class="entry-header">
+    <h2 class="headword">{page.headword}</h2>
+    <button type="button" class="share" data-share aria-label={`Copy link to ${page.headword}`}>
+      <span class="share-label">Copy link</span>
+    </button>
+  </div>
 
   {page.forms.map((form, idx) => (
     <section class="form" data-form-index={idx}>
@@ -49,3 +54,24 @@ const { page, knownSlugs } = Astro.props;
     </section>
   ))}
 </article>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-share]').forEach((btn) => {
+    const label = btn.querySelector<HTMLElement>('.share-label');
+    if (!label) return;
+    const original = label.textContent ?? 'Copy link';
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        label.textContent = 'Copied';
+        btn.classList.add('copied');
+      } catch {
+        label.textContent = 'Press ⌘C';
+      }
+      window.setTimeout(() => {
+        label.textContent = original;
+        btn.classList.remove('copied');
+      }, 1500);
+    });
+  });
+</script>
