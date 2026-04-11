@@ -11,6 +11,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.2.1",
     "astro": "^4.16.0",
     "minisearch": "^7.1.0",
     "posthog-js": "^1.367.0"

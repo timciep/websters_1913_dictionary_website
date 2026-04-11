@@ -6,7 +6,10 @@ const pages = await loadAllEntries();
 const formTotal = pages.reduce((n, p) => n + p.forms.length, 0);
 const count = formTotal.toLocaleString('en-US');
 ---
-<Base title="Webster's 1913 Dictionary">
+<Base
+  title="Webster's 1913 Dictionary"
+  description={`A complete, browsable copy of Webster's Revised Unabridged Dictionary of 1913 — ${count} headwords with instant autocomplete, clickable cross-references, and abbreviation hints.`}
+>
   <p style="font-size:1.1rem; line-height:1.6; margin-bottom: 0.5rem;">
     A complete, browsable copy of <a href="https://en.wikipedia.org/wiki/Webster%27s_Dictionary#:~:text=1913%20edition" target="_blank" rel="noopener noreferrer"><em>Webster's Revised Unabridged Dictionary</em>
     of 1913</a> — {count} headwords.

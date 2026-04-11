@@ -1,8 +1,10 @@
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   output: 'static',
   site: 'https://websters1913.timcieplowski.com',
+  integrations: [sitemap()],
   build: {
     format: 'directory',
   },

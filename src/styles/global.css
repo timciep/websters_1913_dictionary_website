@@ -202,9 +202,12 @@ header.site h1 a {
   cursor: pointer;
 }
 .search ul.results li:last-child { border-bottom: 0; }
-.search ul.results li:hover,
-.search ul.results li[aria-selected="true"] {
+.search ul.results li:hover {
   background: var(--bg);
+}
+.search ul.results li[aria-selected="true"] {
+  background: #f1e6cf;
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 .search ul.results .hit-hw {
   font-weight: 600;

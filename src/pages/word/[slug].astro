@@ -14,7 +14,39 @@ export async function getStaticPaths() {
 
 interface Props { page: EntryPage; knownSlugs: Set<string> }
 const { page, knownSlugs } = Astro.props;
+
+// Strip markup / collapse whitespace / truncate for <meta name="description">.
+function plain(s: string): string {
+  return s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+}
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max - 1);
+  const sp = cut.lastIndexOf(' ');
+  return (sp > max * 0.6 ? cut.slice(0, sp) : cut).trimEnd() + '…';
+}
+
+const firstSense = page.forms[0]?.senses[0]?.definition ?? '';
+const pos = page.forms[0]?.partOfSpeech;
+const descBase = firstSense
+  ? `${pos ? `(${plain(pos)}) ` : ''}${plain(firstSense)}`
+  : `Definition of ${page.headword} from Webster's Revised Unabridged Dictionary (1913).`;
+const description = truncate(descBase, 155);
+
+const title = `${page.headword} — Webster's 1913 Dictionary`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'DefinedTerm',
+  name: page.headword,
+  description,
+  inDefinedTermSet: {
+    '@type': 'DefinedTermSet',
+    name: "Webster's Revised Unabridged Dictionary (1913)",
+  },
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+};
 ---
-<Base title={`${page.headword} — Webster's 1913 Dictionary`}>
+<Base title={title} description={description} jsonLd={jsonLd}>
   <Definition page={page} knownSlugs={knownSlugs} />
 </Base>

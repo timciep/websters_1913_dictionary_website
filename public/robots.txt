@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://websters1913.timcieplowski.com/sitemap-index.xml
