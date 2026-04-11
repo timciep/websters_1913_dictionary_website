@@ -123,6 +123,44 @@ it, do it the same way `postProcessDef` does for definitions: keep `<er>`
 tags in the etymology field and run `renderDefinition` on it at render
 time).
 
+## Abbreviation tooltips ("hints")
+
+`src/lib/crossref.ts` wraps scholarly and language abbreviations in
+`<abbr class="pos-abbr" tabindex="0" data-expand="...">` tags so readers
+get a tooltip on hover/focus. When the user says **"add a tooltip"** or
+**"add a hint"** for an abbreviation, this is where it goes.
+
+Two mechanisms, pick the right one:
+
+1. **`ABBR_HINTS`** — a list of `[RegExp, expansion]` pairs. Matches
+   anywhere in the escaped text. Use this for:
+   - Scholarly shorthands (`Cf.`, `e.g.`, `i.e.`, `viz.`, `Fig.`, …)
+   - Language abbreviations from etymology brackets (`OF.`, `Gr.`, `Skr.`,
+     `OHG.`, …)
+   - Longer patterns must come before their prefixes (regex is evaluated
+     in order, and alternation inside a single regex isn't used here).
+
+2. **`INFLECTION_ABBRS`** — a list of strings compiled into one regex
+   with a `(?= of )` lookahead. Use this for part-of-speech / inflection
+   abbreviations like `imp.`, `p. p.`, `p. pr. & a.` that would collide
+   with author initials or end-of-sentence periods in free prose. They
+   only get annotated when followed by ` of ` (the canonical GCIDE
+   "form-of" stub shape, e.g. `imp. of <er>Run</er>`). Longer patterns
+   must come **before** their prefixes so alternation matches greedily
+   (`imp. & p. p.` before `imp.`). Expansions come from `expandPos()` in
+   `src/lib/pos.ts` — if a new inflection isn't covered there, add it.
+
+**Deliberately skipped:** single-letter language codes (`F.`, `L.`, `D.`,
+`G.`, `W.`, `E.`, `Sp.`). They collide with author initials, `D.C.`,
+`Sp. gr.` (specific gravity), Fahrenheit, and end-of-sentence captures.
+Don't add these to `ABBR_HINTS` without a much cleverer matcher.
+
+**Ordering constraint:** `annotateAbbrs` runs on already-HTML-escaped
+text and emits literal markup. It must run *after* `escapeHtml` and
+*only* on the non-`<er>` segments (the `<er>` inner text is rendered as
+anchor/italic content and shouldn't be annotated). `renderDefinition`
+already wires this up correctly.
+
 ## Build constraints
 
 ### The search index download budget
@@ -166,6 +204,7 @@ A fresh checkout requires three commands: `npm install`,
 | Add a new field to entry JSON | `data-pipeline/build-data.ts` (`EntryFormRecord`/`EntryPageRecord`, `addForm`) + `src/lib/entry.ts` (`EntryForm`/`EntryPage`) — keep them in sync |
 | Add a new GCIDE tag to extract | `data-pipeline/parse-gcide.ts` — add to `firstTag`/`allTags` calls in `parseGcideFile`/`pushSenseFromBlock` |
 | Add a missing special character | `data-pipeline/entities.ts` — `NAMED` table, or add a missing accent to `COMBINING` |
+| Add a tooltip/hint for an abbreviation | `src/lib/crossref.ts` — `ABBR_HINTS` for scholarly/language abbrevs, `INFLECTION_ABBRS` (+ `src/lib/pos.ts`) for `imp.`/`p. p.`-style form-of stubs. See "Abbreviation tooltips" section |
 | Change slug rules | `src/lib/slug.ts` — **regenerate `data/` after** (`npm run data`) and rebuild the site, or all cross-references break |
 | Add a new page type | New file in `src/pages/`. Don't tangle it with `word/[slug].astro` |
 | Tweak typography | `src/styles/global.css` — single hand-written stylesheet, no CSS framework |

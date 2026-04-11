@@ -1,4 +1,5 @@
 import { slugify } from './slug.js';
+import { expandPos } from './pos.js';
 
 const HTML_ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -61,6 +62,36 @@ const ABBR_HINTS: Array<[RegExp, string]> = [
   [/\bTurk\./g, 'Turkish'],
 ];
 
+// Inflection abbreviations that introduce a "form-of" pointer in cross-
+// reference definitions, e.g. "imp. of <er>Run</er>" or "p. p. of <er>See</er>".
+// These collide with author initials and end-of-sentence captures in free
+// prose, so we only annotate them when followed by " of " — that's the
+// canonical GCIDE shape for this kind of stub definition. Longer patterns
+// must come before their prefixes so the regex alternation matches them
+// greedily.
+const INFLECTION_ABBRS = [
+  'imp. pl. & p. p.',
+  'imp. & p. p.',
+  '3d pers. sing. pres.',
+  '2d pers. sing. pres.',
+  'obs. imp.',
+  'imp. pl.',
+  'p. pr. & a.',
+  'p. pr.',
+  'p. p.',
+  'imp.',
+  'pl.',
+];
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const INFLECTION_RE = new RegExp(
+  '(' + INFLECTION_ABBRS.map(escapeRegex).join('|') + ')(?= of )',
+  'g',
+);
+
 function annotateAbbrs(escaped: string): string {
   let out = escaped;
   for (const [re, expand] of ABBR_HINTS) {
@@ -70,6 +101,11 @@ function annotateAbbrs(escaped: string): string {
         `<abbr class="pos-abbr" tabindex="0" data-expand="${expand}">${match}</abbr>`,
     );
   }
+  out = out.replace(INFLECTION_RE, (match) => {
+    const expand = expandPos(match);
+    if (!expand) return match;
+    return `<abbr class="pos-abbr" tabindex="0" data-expand="${expand}">${match}</abbr>`;
+  });
   return out;
 }
 
