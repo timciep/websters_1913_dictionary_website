@@ -33,9 +33,14 @@ const { title } = Astro.props;
         <slot />
       </main>
       <footer class="site">
-        Text from the public-domain
-        <a href="https://gcide.gnu.org.ua/">GNU Collaborative International Dictionary of English</a>,
-        derived from Webster's Revised Unabridged Dictionary (1913).
+        <p>
+          Text from the public-domain
+          <a href="https://gcide.gnu.org.ua/">GNU Collaborative International Dictionary of English</a>,
+          derived from Webster's Revised Unabridged Dictionary (1913).
+        </p>
+        <p class="support">
+          Enjoying the dictionary? <a href="https://ko-fi.com/timciep" rel="noopener noreferrer">Support its upkeep</a>.
+        </p>
       </footer>
     </div>
   </body>

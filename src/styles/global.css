@@ -231,3 +231,11 @@ footer.site {
   font-size: 0.8rem;
   color: var(--ink-soft);
 }
+
+footer.site p {
+  margin: 0.4rem 0;
+}
+
+footer.site .support {
+  font-style: italic;
+}
