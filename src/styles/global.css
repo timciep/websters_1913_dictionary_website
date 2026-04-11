@@ -128,8 +128,6 @@ header.site h1 a {
   color: var(--ink-soft);
   font-size: 0.95rem;
   margin: 0 0 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--rule);
 }
 .entry .sense {
   margin: 0 0 1.25rem;
