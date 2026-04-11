@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config';
 
 export default defineConfig({
   output: 'static',
-  site: 'https://example.com',
+  site: 'https://websters1913.timcieplowski.com',
   build: {
     format: 'directory',
   },
