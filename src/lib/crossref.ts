@@ -12,6 +12,67 @@ export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
 }
 
+// Wrap stray scholarly abbreviations in <abbr> tooltips. Operates on
+// already-escaped HTML text — the replacement contains literal markup, so
+// it must run after escapeHtml, never before.
+//
+// Most entries are language abbreviations from the etymology brackets
+// (Webster's 1913 cites cognates in dozens of languages with terse caps).
+// A few — Cf., e.g., i.e., viz., Fig., Prob., Pref. — are scholarly
+// shorthands that also crop up inside definitions. Single-letter cases
+// (F., L., D., G., W., E., Sp.) are deliberately skipped: they collide
+// with author initials, "D.C.", "Sp. gr." (specific gravity), Fahrenheit,
+// and end-of-sentence captures.
+const ABBR_HINTS: Array<[RegExp, string]> = [
+  // Scholarly shorthands
+  [/\bCf\./g, 'compare'],
+  [/\bcf\./g, 'compare'],
+  [/\be\.\s?g\./g, 'for example'],
+  [/\bi\.\s?e\./g, 'that is'],
+  [/\bq\.\s?v\./g, 'which see'],
+  [/\bviz\./g, 'namely'],
+  [/\bFig\./g, 'figuratively'],
+  [/\bProb\./g, 'probably'],
+  [/\bPref\./g, 'prefix'],
+  // Language abbreviations (etymology brackets)
+  [/\bOF\./g, 'Old French'],
+  [/\bOE\./g, 'Old English'],
+  [/\bME\./g, 'Middle English'],
+  [/\bAS\./g, 'Anglo-Saxon'],
+  [/\bLL\./g, 'Late Latin'],
+  [/\bNL\./g, 'New Latin'],
+  [/\bOL\./g, 'Old Latin'],
+  [/\bGr\./g, 'Greek'],
+  [/\bOHG\./g, 'Old High German'],
+  [/\bMHG\./g, 'Middle High German'],
+  [/\bOS\./g, 'Old Saxon'],
+  [/\bIcel\./g, 'Icelandic'],
+  [/\bGoth\./g, 'Gothic'],
+  [/\bSkr\./g, 'Sanskrit'],
+  [/\bSkt\./g, 'Sanskrit'],
+  [/\bHeb\./g, 'Hebrew'],
+  [/\bAr\./g, 'Arabic'],
+  [/\bIt\./g, 'Italian'],
+  [/\bPg\./g, 'Portuguese'],
+  [/\bGer\./g, 'German'],
+  [/\bDan\./g, 'Danish'],
+  [/\bSw\./g, 'Swedish'],
+  [/\bPers\./g, 'Persian'],
+  [/\bTurk\./g, 'Turkish'],
+];
+
+function annotateAbbrs(escaped: string): string {
+  let out = escaped;
+  for (const [re, expand] of ABBR_HINTS) {
+    out = out.replace(
+      re,
+      (match) =>
+        `<abbr class="pos-abbr" tabindex="0" data-expand="${expand}">${match}</abbr>`,
+    );
+  }
+  return out;
+}
+
 /**
  * Render a definition string (which may contain `<er>...</er>` cross-reference
  * tags) to HTML. Cross-refs that resolve to a known slug become anchors;
@@ -26,7 +87,7 @@ export function renderDefinition(def: string, knownSlugs: Set<string>): string {
   let m: RegExpExecArray | null;
   while ((m = re.exec(def)) !== null) {
     if (m.index > lastIndex) {
-      parts.push(escapeHtml(def.slice(lastIndex, m.index)));
+      parts.push(annotateAbbrs(escapeHtml(def.slice(lastIndex, m.index))));
     }
     const target = m[1];
     const slug = slugify(target);
@@ -38,7 +99,7 @@ export function renderDefinition(def: string, knownSlugs: Set<string>): string {
     lastIndex = m.index + m[0].length;
   }
   if (lastIndex < def.length) {
-    parts.push(escapeHtml(def.slice(lastIndex)));
+    parts.push(annotateAbbrs(escapeHtml(def.slice(lastIndex))));
   }
   return parts.join('');
 }

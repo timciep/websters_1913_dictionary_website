@@ -1,7 +1,7 @@
 :root {
   --bg: #fdfaf3;
   --ink: #1a1a1a;
-  --ink-soft: #555;
+  --ink-soft: #414040;
   --rule: #d8d2c2;
   --accent: #6a3a1a;
   --link: #6a3a1a;
@@ -71,6 +71,49 @@ header.site h1 a {
   padding-top: 1.5rem;
   border-top: 1px solid var(--rule);
 }
+.entry .lead {
+  margin: 0 0 0.5rem;
+}
+.entry .lead-hw {
+  font-weight: 600;
+}
+.entry .lead-pron {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.entry .lead-pos {
+  font-style: italic;
+}
+.entry .pos-abbr {
+  position: relative;
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.15em;
+  outline: none;
+}
+.entry .pos-abbr::after {
+  content: attr(data-expand);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.35em);
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--bg);
+  padding: 0.25em 0.55em;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-style: normal;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease-out;
+  z-index: 5;
+}
+.entry .pos-abbr:hover::after,
+.entry .pos-abbr:focus::after {
+  opacity: 1;
+}
 .entry .pron {
   color: var(--ink-soft);
   font-style: italic;
@@ -102,18 +145,18 @@ header.site h1 a {
   flex: 1;
 }
 .entry .quote {
-  margin: 0.4rem 0 0.6rem;
-  padding-left: 1rem;
+  margin: 0.9rem 0 1rem;
+  padding: 0.15rem 0 0.2rem 1.25rem;
   border-left: 2px solid var(--rule);
   color: var(--ink-soft);
   font-style: italic;
 }
 .entry .quote .author {
   display: block;
-  text-align: right;
+  text-align: left;
   font-style: normal;
   font-size: 0.85rem;
-  margin-top: 0.15rem;
+  margin-top: 0.5rem;
 }
 .entry .variants {
   font-size: 0.85rem;

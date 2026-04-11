@@ -15,6 +15,6 @@ export async function getStaticPaths() {
 interface Props { page: EntryPage; knownSlugs: Set<string> }
 const { page, knownSlugs } = Astro.props;
 ---
-<Base title={`${page.headword} — Webster's 1913`}>
+<Base title={`${page.headword} — Webster's 1913 Dictionary`}>
   <Definition page={page} knownSlugs={knownSlugs} />
 </Base>

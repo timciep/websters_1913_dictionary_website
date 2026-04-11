@@ -56,6 +56,15 @@ function clean(s: string): string {
   return normalizeWhitespace(decodeXmlEscapes(stripTags(s))).replace(/\s+([,.;:!?])/g, '$1');
 }
 
+// `(?)` is an editorial shorthand in the GCIDE source meaning "pronounced as
+// the headword is spelled." It carries no information for the reader, so drop
+// it — and drop the whole `<pr>` if that's all it contained.
+function cleanPronunciation(pr: string | undefined): string | undefined {
+  if (!pr) return undefined;
+  const stripped = clean(pr).replace(/\(\?\)/g, '').replace(/\s+/g, ' ').trim();
+  return stripped.length > 0 ? stripped : undefined;
+}
+
 // Extract text content of the FIRST occurrence of <tag>...</tag>.
 function firstTag(block: string, tag: string): string | undefined {
   const re = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`);
@@ -109,9 +118,9 @@ export function parseGcideFile(raw: string): RawEntry[] {
       current = {
         headwords,
         displayHeadword: hw ? clean(hw) : headwords[0] ?? '',
-        pronunciation: pr ? clean(pr) : undefined,
+        pronunciation: cleanPronunciation(pr),
         partOfSpeech: pos ? clean(pos) : undefined,
-        etymology: ety ? clean(ety) : undefined,
+        etymology: ety ? postProcessDef(ety) : undefined,
         senses: [],
       };
       // Some <ent> blocks ALSO contain a first sense / definition.

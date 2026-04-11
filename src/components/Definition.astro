@@ -1,6 +1,7 @@
 ---
 import type { EntryPage } from '../lib/entry';
 import { renderDefinition } from '../lib/crossref';
+import { expandPos } from '../lib/pos';
 
 interface Props {
   page: EntryPage;
@@ -13,9 +14,18 @@ const { page, knownSlugs } = Astro.props;
 
   {page.forms.map((form, idx) => (
     <section class="form" data-form-index={idx}>
-      {form.pronunciation && <p class="pron">{form.pronunciation}</p>}
-      {form.partOfSpeech && <p class="pos">{form.partOfSpeech}</p>}
-      {form.etymology && <p class="ety">{form.etymology}</p>}
+      <p class="lead">
+        <span class="lead-hw">{form.headword}</span>
+        {form.pronunciation && <span class="lead-pron"> {form.pronunciation}</span>}
+        {form.partOfSpeech && (
+          <span class="lead-pos">, {
+            expandPos(form.partOfSpeech)
+              ? <abbr class="pos-abbr" tabindex="0" data-expand={expandPos(form.partOfSpeech)!}>{form.partOfSpeech}</abbr>
+              : form.partOfSpeech
+          }</span>
+        )}
+      </p>
+      {form.etymology && <p class="ety" set:html={renderDefinition(form.etymology, knownSlugs)} />}
 
       {form.senses.map((sense) => (
         <div class="sense">
