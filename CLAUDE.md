@@ -220,6 +220,22 @@ routes, not by inflating the word route's params.
 A fresh checkout requires three commands: `npm install`,
 `git clone … gnu_gcide`, then `npm run data`. After that the site builds.
 
+## Dark mode
+
+The site supports light/dark themes via CSS custom properties on `:root`
+and a `[data-theme="dark"]` override block in `global.css`. The mechanism:
+
+- An inline `<script>` in `<head>` (in `Base.astro`) reads
+  `localStorage('theme')` and sets `data-theme="dark"` on `<html>` before
+  paint, so there is no flash of wrong theme.
+- A sun/moon toggle button in the site header flips the attribute and
+  persists the choice to `localStorage`. Defaults to light if nothing is
+  stored.
+- All colors flow through CSS variables (`--bg`, `--ink`, `--rule`,
+  `--accent`, `--link`, `--link-hover`). Any new UI that uses these
+  variables will automatically respect dark mode — avoid hardcoding color
+  values.
+
 ## Common tasks and where to do them
 
 | Task | Where |
@@ -232,6 +248,7 @@ A fresh checkout requires three commands: `npm install`,
 | Change slug rules | `src/lib/slug.ts` — **regenerate `data/` after** (`npm run data`) and rebuild the site, or all cross-references break |
 | Add a new page type | New file in `src/pages/`. Don't tangle it with `word/[slug].astro` |
 | Tweak typography | `src/styles/global.css` — single hand-written stylesheet, no CSS framework |
+| Adjust dark-mode colors | `src/styles/global.css` — `[data-theme="dark"]` block. See "Dark mode" section |
 | Change search behavior | `src/components/SearchBox.astro` — vanilla TS in an Astro `<script>`, MiniSearch options live in the `new MiniSearch({...})` call |
 
 ## Things to avoid

@@ -4,8 +4,8 @@
   --ink-soft: #414040;
   --rule: #d8d2c2;
   --accent: #6a3a1a;
-  --link: #6a3a1a;
-  --link-hover: #a5572d;
+  --link: #8b5e3c;
+  --link-hover: #9a5f30;
   --serif: 'Iowan Old Style', 'Palatino', 'Georgia', serif;
   --max: 38rem;
 }
@@ -18,6 +18,10 @@
   --accent: #c8864e;
   --link: #c8864e;
   --link-hover: #e0a56a;
+}
+[data-theme="dark"] .search input,
+[data-theme="dark"] .search ul.results {
+  background: #242120;
 }
 
 * { box-sizing: border-box; }
@@ -255,7 +259,7 @@ header.site h1 a {
   font-family: var(--serif);
   font-size: 1.1rem;
   padding: 0.75rem 1rem;
-  background: var(--bg);
+  background: white;
   border: 1px solid var(--rule);
   border-radius: 4px;
   color: var(--ink);
@@ -271,7 +275,7 @@ header.site h1 a {
   position: absolute;
   left: 0;
   right: 0;
-  background: var(--bg);
+  background: white;
   border: 1px solid var(--rule);
   border-radius: 4px;
   max-height: 22rem;
