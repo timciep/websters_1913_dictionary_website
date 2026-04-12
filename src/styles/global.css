@@ -145,6 +145,48 @@ header.site h1 a {
 .entry .pos-abbr:focus::after {
   opacity: 1;
 }
+.entry .xref-corrected {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 1;
+  color: var(--accent);
+  padding: 0 0.15em;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-left: 0.15em;
+  outline: none;
+}
+.entry .xref-corrected::after {
+  content: attr(data-expand);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.35em);
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--bg);
+  padding: 0.25em 0.55em;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-style: normal;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease-out;
+  z-index: 5;
+}
+.entry .xref-corrected:hover::after,
+.entry .xref-corrected:focus::after {
+  opacity: 1;
+}
+.entry .xref-corrected:hover {
+  color: var(--link-hover);
+  background: var(--rule);
+}
 .entry .pron {
   color: var(--ink-soft);
   font-style: italic;

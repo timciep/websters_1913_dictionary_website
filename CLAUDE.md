@@ -109,13 +109,36 @@ The pipeline **preserves** these tags on disk (see `postProcessDef` —
 everything else is stripped). At render time, `src/lib/crossref.ts` resolves
 each `<er>` against the full slug set:
 
+- Strip GCIDE homograph suffixes (`{2}`, `{3b}`, `[wn1]`, etc.) from the
+  target text before slugifying — our site merges homographs onto one page,
+  so these are noise.
 - If `slugify(target)` is in `knownSlugs`, emit
   `<a class="xref" href="/word/{slug}/">target</a>`.
+- If the slug is not found but appears in `SLUG_CORRECTIONS`, the corrected
+  slug is used instead (see below). Corrected links get a small `∗` indicator
+  with a tooltip showing the original text.
 - Otherwise, emit `<i>target</i>` (italicized — no broken links).
 
 The slug set is loaded once and passed into every page via `getStaticPaths`
 in `src/pages/word/[slug].astro`. `loadAllEntries()` and `loadSlugSet()`
 both cache after the first call, so this is cheap.
+
+**`SLUG_CORRECTIONS`** — GCIDE contains ~60 misspelled or mis-hyphenated
+cross-reference targets. Rather than patching the vendor data,
+`crossref.ts` keeps a `SLUG_CORRECTIONS` map (`wrong-slug → right-slug`)
+that redirects at render time. Three categories:
+
+- **Typos** — `achorman` → `anchorman`, `hoookah` → `hookah`, etc.
+- **Hyphenation mismatches** — `Gilly-flower` → `gillyflower`, `Toad flax`
+  → `toadflax`, etc.
+- **Alternate spellings** — `dextrotatory` → `dextrorotatory`, etc.
+
+When you find a cross-ref that should link but doesn't, check whether the
+`<er>` text has a typo or spacing mismatch — if so, add the correction
+here rather than editing the GCIDE files. Always verify the target slug
+exists in `data/entries/` before adding. ~545 broken cross-refs remain;
+most are multi-word terms that don't exist as headwords and can't be fixed
+without adding new content.
 
 **Etymology cross-refs are NOT linkified** — `parseGcideFile` strips all
 tags from `<ety>` content (this is the easiest known cleanup; if you fix
@@ -205,6 +228,7 @@ A fresh checkout requires three commands: `npm install`,
 | Add a new GCIDE tag to extract | `data-pipeline/parse-gcide.ts` — add to `firstTag`/`allTags` calls in `parseGcideFile`/`pushSenseFromBlock` |
 | Add a missing special character | `data-pipeline/entities.ts` — `NAMED` table, or add a missing accent to `COMBINING` |
 | Add a tooltip/hint for an abbreviation | `src/lib/crossref.ts` — `ABBR_HINTS` for scholarly/language abbrevs, `INFLECTION_ABBRS` (+ `src/lib/pos.ts`) for `imp.`/`p. p.`-style form-of stubs. See "Abbreviation tooltips" section |
+| Fix a misspelled cross-reference | `src/lib/crossref.ts` — add to `SLUG_CORRECTIONS`. See "Cross-references" section |
 | Change slug rules | `src/lib/slug.ts` — **regenerate `data/` after** (`npm run data`) and rebuild the site, or all cross-references break |
 | Add a new page type | New file in `src/pages/`. Don't tangle it with `word/[slug].astro` |
 | Tweak typography | `src/styles/global.css` — single hand-written stylesheet, no CSS framework |

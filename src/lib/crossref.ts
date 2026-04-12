@@ -64,6 +64,7 @@ const ABBR_HINTS: Array<[RegExp, string]> = [
   [/\bTurk\./g, 'Turkish'],
   [/\bF\./g, 'French'],
   [/\bL\./g, 'Latin'],
+  [/\bG\./g, 'German'],
 ];
 
 // Inflection abbreviations that introduce a "form-of" pointer in cross-
@@ -113,6 +114,76 @@ function annotateAbbrs(escaped: string): string {
   return out;
 }
 
+// GCIDE cross-references sometimes carry `{N}` or `[tag]` suffixes for
+// homograph disambiguation. Our site merges homographs onto one page, so
+// we strip these before slug lookup.
+const SUFFIX_RE = /[\{\[].+$/;
+
+// GCIDE contains misspelled cross-references. Rather than patching vendor
+// data, correct the slugs at render time.
+const SLUG_CORRECTIONS: Record<string, string> = {
+  // Typos in source
+  achorman: 'anchorman',
+  agilops: 'aegilops',
+  antocians: 'antecians',
+  ascoccus: 'ascococcus',
+  baddrelocks: 'badderlocks',
+  bodick: 'bodice',
+  brachmanic: 'brahmanic',
+  brokkerage: 'brokerage',
+  bucketfull: 'bucketful',
+  'carboxyl-gorup': 'carboxyl-group',
+  carpaphore: 'carpophore',
+  casarian: 'caesarean',
+  chaceleon: 'chameleon',
+  cheesparing: 'cheeseparing',
+  convolvuln: 'convolvulin',
+  corriestep: 'corbiestep',
+  corrundum: 'corundum',
+  corundun: 'corundum',
+  'cruclan-carp': 'crucian-carp',
+  epycycloid: 'epicycloid',
+  eychroic: 'euchroic',
+  feullemort: 'feuillemort',
+  ganoidel: 'ganoidei',
+  glutaus: 'gluteus',
+  gobulin: 'globulin',
+  hoocephali: 'holocephali',
+  hoookah: 'hookah',
+  ichthvophthira: 'ichthyophthira',
+  intercolumnlation: 'intercolumniation',
+  lambus: 'iambus',
+  legislatature: 'legislature',
+  mycropyle: 'micropyle',
+  nonoclinal: 'monoclinal',
+  otrthopedic: 'orthopedic',
+  persinogen: 'pepsinogen',
+  rapscalion: 'rapscallion',
+  'ratched-wheel': 'ratchet',
+  sloough: 'slough',
+  specsioneer: 'specksioneer',
+  yellolegs: 'yellowlegs',
+  // Hyphenation / spacing variants
+  acornshell: 'acorn-shell',
+  'army-worm': 'armyworm',
+  'black-list': 'blacklist',
+  'black-cap': 'blackcap',
+  'breast-wheel': 'breastwheel',
+  'bush-buck': 'bushbuck',
+  'deacon-ship': 'deaconship',
+  'gilly-flower': 'gillyflower',
+  'moor-fowl': 'moorfowl',
+  'toad-flax': 'toadflax',
+  woadwaxen: 'woad-waxen',
+  // Alternate spellings where the target exists under a different form
+  'angostura-bark': 'angustura-bark',
+  dextrotatory: 'dextrorotatory',
+  highfaluting: 'highfalutin',
+  mammillated: 'mamillated',
+  ridgelling: 'ridgeling',
+  tagliacotian: 'taliacotian',
+};
+
 /**
  * Render a definition string (which may contain `<er>...</er>` cross-reference
  * tags) to HTML. Cross-refs that resolve to a known slug become anchors;
@@ -130,11 +201,21 @@ export function renderDefinition(def: string, knownSlugs: Set<string>): string {
       parts.push(annotateAbbrs(escapeHtml(def.slice(lastIndex, m.index))));
     }
     const target = m[1];
-    const slug = slugify(target);
+    // Strip GCIDE homograph suffixes like {2} or [wn1]
+    const cleaned = target.replace(SUFFIX_RE, '').trim();
+    let slug = slugify(cleaned);
+    let corrected = false;
+    if (slug && !knownSlugs.has(slug) && SLUG_CORRECTIONS[slug]) {
+      slug = SLUG_CORRECTIONS[slug];
+      corrected = true;
+    }
     if (slug && knownSlugs.has(slug)) {
-      parts.push(`<a class="xref" href="/word/${slug}/">${escapeHtml(target)}</a>`);
+      const correction = corrected
+        ? ` <span class="xref-corrected" tabindex="0" data-expand="Corrected from &quot;${escapeHtml(target)}&quot;">&lowast;</span>`
+        : '';
+      parts.push(`<a class="xref" href="/word/${slug}/">${escapeHtml(cleaned)}</a>${correction}`);
     } else {
-      parts.push(`<i>${escapeHtml(target)}</i>`);
+      parts.push(`<i>${escapeHtml(cleaned)}</i>`);
     }
     lastIndex = m.index + m[0].length;
   }
