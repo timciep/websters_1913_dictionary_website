@@ -10,6 +10,16 @@
   --max: 38rem;
 }
 
+[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --ink: #d9d3c7;
+  --ink-soft: #a09a8e;
+  --rule: #3a3530;
+  --accent: #c8864e;
+  --link: #c8864e;
+  --link-hover: #e0a56a;
+}
+
 * { box-sizing: border-box; }
 
 html {
@@ -35,7 +45,7 @@ body {
 a {
   color: var(--link);
   text-decoration: none;
-  border-bottom: 1px solid rgba(106, 58, 26, 0.25);
+  border-bottom: 1px solid color-mix(in srgb, var(--link) 25%, transparent);
 }
 a:hover {
   color: var(--link-hover);
@@ -245,7 +255,7 @@ header.site h1 a {
   font-family: var(--serif);
   font-size: 1.1rem;
   padding: 0.75rem 1rem;
-  background: white;
+  background: var(--bg);
   border: 1px solid var(--rule);
   border-radius: 4px;
   color: var(--ink);
@@ -261,12 +271,12 @@ header.site h1 a {
   position: absolute;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--bg);
   border: 1px solid var(--rule);
   border-radius: 4px;
   max-height: 22rem;
   overflow-y: auto;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--ink) 12%, transparent);
   z-index: 10;
 }
 .search ul.results li {
@@ -279,7 +289,7 @@ header.site h1 a {
   background: var(--bg);
 }
 .search ul.results li[aria-selected="true"] {
-  background: #f1e6cf;
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .search ul.results .hit-hw {
@@ -308,17 +318,35 @@ header.site h1 a {
   font-size: 0.85rem;
   font-family: var(--serif);
   line-height: 1.3;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--ink) 25%, transparent);
   z-index: 20;
   white-space: nowrap;
   max-width: calc(100vw - 1rem);
 }
 .word-popover a {
   color: var(--bg);
-  border-bottom: 1px solid rgba(253, 250, 243, 0.45);
+  border-bottom: 1px solid color-mix(in srgb, var(--bg) 45%, transparent);
 }
 .word-popover a:hover {
   border-bottom-color: var(--bg);
+}
+
+/* Theme toggle */
+.theme-toggle {
+  background: none;
+  border: 0;
+  padding: 0.2rem;
+  margin: 0;
+  color: var(--ink-soft);
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s ease-out;
+  line-height: 0;
+}
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  opacity: 1;
+  outline: none;
 }
 
 /* Homepage features */
