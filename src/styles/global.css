@@ -29,7 +29,7 @@ body {
 .container {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 2.5rem 1.25rem 6rem;
+  padding: 1.5rem 1.25rem 6rem;
 }
 
 a {
@@ -238,7 +238,7 @@ header.site h1 a {
 /* Search box */
 .search {
   position: relative;
-  margin: 0.75rem 0 0;
+  margin: 1.25rem 0 1rem;
 }
 .search input {
   width: 100%;
