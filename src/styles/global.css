@@ -265,11 +265,25 @@ header.site h1 a {
   position: relative;
   margin: 1.25rem 0 1rem;
 }
+.search-input-wrap {
+  position: relative;
+}
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+.search-input-wrap:focus-within .search-icon {
+  color: var(--accent);
+}
 .search input {
   width: 100%;
   font-family: var(--serif);
   font-size: 1.1rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
   background: white;
   border: 1px solid var(--rule);
   border-radius: 4px;

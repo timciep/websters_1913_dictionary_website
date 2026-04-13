@@ -18,7 +18,7 @@ original 1913 content from later contributions.
 
 [gcide]: https://gcide.gnu.org.ua/
 
-![Webster's 1913 screenshot](https://www.timcieplowski.com/img/websters_screenshot.png)
+![Webster's 1913 screenshot](https://www.timcieplowski.com/img/dictionary_pec.png)
 
 ## Features
 

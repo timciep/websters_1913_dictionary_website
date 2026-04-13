@@ -1,15 +1,19 @@
 ---
 // Vanilla client-side search island. Loads /search-index.json on first focus,
 // builds a MiniSearch index, and shows autocomplete results.
+import IconSearch from './icons/IconSearch.astro';
 ---
 <div class="search">
-  <input
-    id="q"
-    type="search"
-    autocomplete="off"
-    placeholder="Search the dictionary…"
-    aria-label="Search the dictionary"
-  />
+  <div class="search-input-wrap">
+    <IconSearch class="search-icon" />
+    <input
+      id="q"
+      type="search"
+      autocomplete="off"
+      placeholder="Search the dictionary…"
+      aria-label="Search the dictionary"
+    />
+  </div>
   <ul id="results" class="results" hidden></ul>
 </div>
 <div id="word-popover" class="word-popover" role="dialog" aria-label="Look up selected word" hidden>
