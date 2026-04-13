@@ -18,6 +18,7 @@ export interface Sense {
   number?: string;
   definition: string; // HTML-safe (no <a> yet — that's added later by crossref pass)
   quotations: { text: string; author?: string }[];
+  source?: string; // e.g. "1913 Webster", "PJC", "WordNet 1.5"
 }
 
 export interface RawEntry {
@@ -154,12 +155,19 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
     }
   }
 
+  // Extract source attribution(s) from the block. GCIDE marks each block with
+  // one or more <source>...</source> tags. We pick the first non-"+" source as
+  // the primary attribution ("+PJC" means "edited by PJC", not "authored by").
+  const sources = allTags(block, 'source').map((s) => s.trim());
+  const primarySource = sources.find((s) => s && !s.startsWith('+')) ?? sources[0];
+
   if (def) {
     entry.senses.push({
       number: sn ? clean(sn) : undefined,
       // Keep <er> tags so the crossref pass can linkify them; strip everything else.
       definition: postProcessDef(def),
       quotations,
+      source: primarySource || undefined,
     });
   } else if (quotations.length > 0 && entry.senses.length > 0) {
     // Quotation block attached to the previous sense.

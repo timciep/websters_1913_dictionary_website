@@ -9,6 +9,22 @@ interface Props {
   knownSlugs: Set<string>;
 }
 const { page, knownSlugs } = Astro.props;
+
+/** Human-readable short name for the source, or undefined to suppress display. */
+function sourceLabel(source: string | undefined): string | undefined {
+  if (!source) return undefined;
+  const s = source.trim().toLowerCase();
+  // Original 1913 content — no label needed
+  if (s.includes('1913') || s.includes('webster') || s.includes('century')) return undefined;
+  // Normalise known sources to a clean display name
+  if (/wordnet/i.test(source)) return 'WordNet';
+  return 'GCIDE';
+}
+
+/** Tooltip for the source badge. */
+function sourceTooltip(source: string): string {
+  return `Added by ${source} — not in the original 1913 edition`;
+}
 ---
 <article class="entry">
   <div class="entry-header">
@@ -38,6 +54,11 @@ const { page, knownSlugs } = Astro.props;
           <div class="num">{sense.number ?? ''}</div>
           <div class="body">
             <Fragment set:html={renderDefinition(sense.definition, knownSlugs)} />
+            {sourceLabel(sense.source) && (
+              <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(sense.source!)}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </span>
+            )}
             {sense.quotations.map((q) => (
               <div class="quote">
                 <span>{q.text}</span>

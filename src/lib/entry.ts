@@ -11,6 +11,7 @@ export interface Sense {
   number?: string;
   definition: string; // may contain <er>...</er> cross-references
   quotations: Quotation[];
+  source?: string; // e.g. "1913 Webster", "PJC", "WordNet 1.5"
 }
 
 // One spelling/POS variant of a headword. Multiple forms share a page when

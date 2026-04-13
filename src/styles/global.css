@@ -229,6 +229,17 @@ header.site h1 a {
 .entry .sense .body {
   flex: 1;
 }
+.entry .source-info {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 0.3rem;
+  color: var(--ink-soft);
+  opacity: 0.55;
+}
+.entry .source-info:hover,
+.entry .source-info:focus {
+  opacity: 1;
+}
 .entry .quote {
   margin: 0.9rem 0 1rem;
   padding: 0.15rem 0 0.2rem 1.25rem;

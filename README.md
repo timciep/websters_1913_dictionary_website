@@ -11,7 +11,10 @@ entries.
 The dictionary text is in the public domain and comes from the
 [GNU Collaborative International Dictionary of English (GCIDE)][gcide], which
 in turn descends from the 1913 edition originally digitized by Project
-Gutenberg.
+Gutenberg. GCIDE is a living project — volunteer editors have added some
+modern definitions over the years (computing terms, psychology, etc.).
+These additions are visually distinguished on the site so readers can tell
+original 1913 content from later contributions.
 
 [gcide]: https://gcide.gnu.org.ua/
 
@@ -158,6 +161,13 @@ the deploy is just an upload of `dist/` — no server, no backend.
 
 - **"Serendipity" is not in the dictionary.** It's not a parser bug — the word
   was rare in 1913 and GCIDE doesn't carry it.
+- **Some definitions are modern additions.** GCIDE contributors (PJC, WordNet,
+  and others) added senses that postdate the 1913 edition — e.g. computing
+  terms under *drive*, *server*, etc. These are labeled with their source
+  (e.g. "WordNet", "GCIDE") so they stand apart from original content.
+  The `<source>` tag in each GCIDE `<p>` block identifies the attribution;
+  the pipeline preserves it and the site displays a label for anything not
+  tagged `1913 Webster` or `Webster 1913 Suppl.`.
 - **Cross-references inside `<ety>` (etymology) blocks are not linkified.** The
   parser currently strips all tags from etymology text. Easy to extend by
   giving etymology the same treatment as definitions.
