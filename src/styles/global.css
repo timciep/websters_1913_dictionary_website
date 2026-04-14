@@ -77,15 +77,20 @@ header.site h1 a {
 /* Entry page */
 .entry .entry-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0 1rem;
   margin: 0 0 1rem;
 }
 .entry h2.headword {
   font-size: 2.25rem;
+  line-height: 1;
   margin: 0;
   font-weight: 600;
+  hyphens: auto;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 .entry .share {
   flex: 0 0 auto;
