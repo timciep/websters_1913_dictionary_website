@@ -1,0 +1,20 @@
+---
+interface Props {
+  current?: string;
+}
+const { current } = Astro.props;
+const letters = 'abcdefghijklmnopqrstuvwxyz'.split('').map((l) => ({
+  letter: l,
+  label: l.toUpperCase(),
+}));
+letters.push({ letter: '_', label: '#' });
+---
+<nav class="alpha-nav" aria-label="Browse by letter">
+  {letters.map(({ letter, label }) =>
+    letter === current ? (
+      <span aria-current="page">{label}</span>
+    ) : (
+      <a href={`/browse/${letter}/`}>{label}</a>
+    )
+  )}
+</nav>

@@ -1,0 +1,111 @@
+---
+import Base from '../../layouts/Base.astro';
+import AlphaNav from '../../components/AlphaNav.astro';
+import { loadBrowseIndex } from '../../lib/browse';
+import type { LetterGroup, BrowseEntry } from '../../lib/browse';
+
+export async function getStaticPaths() {
+  const groups = await loadBrowseIndex();
+  return groups.map((g) => ({
+    params: { letter: g.letter },
+    props: { group: g },
+  }));
+}
+
+interface Props {
+  group: LetterGroup;
+}
+
+const { group } = Astro.props;
+
+const useSubheadings = group.count > 500;
+
+// Group entries by two-letter prefix for sub-headings
+function getPrefix(entry: BrowseEntry): string {
+  const normalized = entry.headword
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .slice(0, 2)
+    .toLowerCase();
+  return normalized;
+}
+
+interface SubGroup {
+  prefix: string;
+  label: string;
+  entries: BrowseEntry[];
+}
+
+let subGroups: SubGroup[] = [];
+if (useSubheadings) {
+  const map = new Map<string, BrowseEntry[]>();
+  for (const entry of group.entries) {
+    const prefix = getPrefix(entry);
+    let bucket = map.get(prefix);
+    if (!bucket) {
+      bucket = [];
+      map.set(prefix, bucket);
+    }
+    bucket.push(entry);
+  }
+  subGroups = Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b, 'en'))
+    .map(([prefix, entries]) => ({
+      prefix,
+      label: prefix.charAt(0).toUpperCase() + prefix.slice(1),
+      entries,
+    }));
+}
+
+const title = group.label === '#'
+  ? 'Numbers & Symbols — Webster\'s 1913 Dictionary'
+  : `Words starting with ${group.label} — Webster's 1913 Dictionary`;
+const description = `Browse all ${group.count.toLocaleString('en-US')} dictionary entries starting with ${group.label} in Webster's 1913 Dictionary.`;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: group.label === '#' ? 'Numbers & Symbols' : `Words starting with ${group.label}`,
+  description,
+  url: `https://websters1913.timcieplowski.com/browse/${group.letter}/`,
+};
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <AlphaNav current={group.letter} />
+
+  <h2>{group.label === '#' ? 'Numbers & Symbols' : group.label}</h2>
+  <p class="browse-count">{group.count.toLocaleString('en-US')} entries</p>
+
+  {useSubheadings && (
+    <nav class="browse-subnav" aria-label="Jump to prefix">
+      {subGroups.map((sg) => (
+        <a href={`#${sg.prefix}`}>{sg.label}</a>
+      ))}
+    </nav>
+  )}
+
+  {useSubheadings ? (
+    subGroups.map((sg) => (
+      <>
+        <h3 class="browse-subhead" id={sg.prefix}>{sg.label}</h3>
+        <ul class="browse-list">
+          {sg.entries.map((e) => (
+            <li>
+              <a href={`/word/${e.slug}/`}>{e.headword}</a>
+              {e.partOfSpeech && <span class="pos">{e.partOfSpeech}</span>}
+            </li>
+          ))}
+        </ul>
+      </>
+    ))
+  ) : (
+    <ul class="browse-list">
+      {group.entries.map((e) => (
+        <li>
+          <a href={`/word/${e.slug}/`}>{e.headword}</a>
+          {e.partOfSpeech && <span class="pos">{e.partOfSpeech}</span>}
+        </li>
+      ))}
+    </ul>
+  )}
+
+</Base>

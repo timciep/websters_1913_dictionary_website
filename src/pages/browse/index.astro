@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro';
+import { loadBrowseIndex } from '../../lib/browse';
+
+const groups = await loadBrowseIndex();
+const total = groups.reduce((n, g) => n + g.count, 0);
+---
+<Base
+  title="Browse — Webster's 1913 Dictionary"
+  description={`Browse all ${total.toLocaleString('en-US')} entries in Webster's Revised Unabridged Dictionary (1913) by letter.`}
+>
+  <h2 style="margin-bottom: 1.5rem;">Browse by letter</h2>
+  <div class="browse-grid">
+    {groups.map((g) => (
+      <a href={`/browse/${g.letter}/`}>
+        <strong>{g.label}</strong>
+        <span class="count">{g.count.toLocaleString('en-US')}</span>
+      </a>
+    ))}
+  </div>
+</Base>

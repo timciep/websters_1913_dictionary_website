@@ -70,6 +70,7 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
           </button>
         </div>
         <SearchBox />
+        <slot name="header-extra" />
       </header>
       <script is:inline>
         (function () {
@@ -115,5 +116,17 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
         </p>
       </footer>
     </div>
+    <button class="back-to-top" type="button" aria-label="Back to top">↑</button>
+    <script is:inline>
+      (function () {
+        var btn = document.querySelector('.back-to-top');
+        window.addEventListener('scroll', function () {
+          btn.classList.toggle('visible', window.scrollY > 400);
+        }, { passive: true });
+        btn.addEventListener('click', function () {
+          window.scrollTo(0, 0);
+        });
+      })();
+    </script>
   </body>
 </html>

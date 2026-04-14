@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import AlphaNav from '../components/AlphaNav.astro';
 import { loadAllEntries } from '../lib/entry';
 
 const pages = await loadAllEntries();
@@ -10,6 +11,11 @@ const count = formTotal.toLocaleString('en-US');
   title="Webster's 1913 Dictionary"
   description={`A complete, searchable copy of Webster's Revised Unabridged Dictionary of 1913 — ${count} headwords with instant autocomplete, clickable cross-references, and abbreviation hints.`}
 >
+  <div class="home-browse" slot="header-extra">
+    <div class="home-browse-label">Browse</div>
+    <AlphaNav />
+  </div>
+
   <p style="font-size:1.1rem; line-height:1.6; margin-bottom: 0.5rem;">
     A complete, searchable copy of <a href="https://en.wikipedia.org/wiki/Webster%27s_Dictionary#:~:text=1913%20edition" target="_blank" rel="noopener noreferrer"><em>Webster's Revised Unabridged Dictionary</em>
     of&nbsp;1913</a>.
