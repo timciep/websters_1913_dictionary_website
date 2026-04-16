@@ -53,9 +53,9 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
       import posthog from 'posthog-js';
       const params = new URLSearchParams(window.location.search);
       if (params.has('notrack')) {
-        sessionStorage.setItem('notrack', '1');
+        localStorage.setItem('notrack', '1');
       }
-      if (import.meta.env.PROD && !sessionStorage.getItem('notrack')) {
+      if (import.meta.env.PROD && !localStorage.getItem('notrack')) {
         posthog.init('phc_GfY3dabf0Wl6qxjCqqCz8mXtbiRq9A9OuQhTX4CqpSr', {
           api_host: 'https://us.i.posthog.com',
           defaults: '2026-01-30',
@@ -120,6 +120,42 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
         </p>
       </footer>
     </div>
+    <script is:inline>
+      (function () {
+        var PAD = 8;
+        var probe;
+        function measure(text) {
+          if (!probe) {
+            probe = document.createElement('span');
+            probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;visibility:hidden;font-size:0.78rem;padding:0.25em 0.55em;line-height:1.3;white-space:normal;width:max-content;';
+            probe.style.maxWidth = 'calc(100vw - 1rem)';
+            probe.style.fontFamily = getComputedStyle(document.body).fontFamily;
+            document.body.appendChild(probe);
+          }
+          probe.textContent = text;
+          return probe.offsetWidth;
+        }
+        function adjust(el) {
+          var text = el.getAttribute('data-expand') || '';
+          var tipW = measure(text);
+          var rect = el.getBoundingClientRect();
+          var center = rect.left + rect.width / 2;
+          var tipLeft = center - tipW / 2;
+          var tipRight = center + tipW / 2;
+          var shift = 0;
+          if (tipLeft < PAD) shift = PAD - tipLeft;
+          else if (tipRight > window.innerWidth - PAD) shift = window.innerWidth - PAD - tipRight;
+          el.style.setProperty('--tooltip-shift', shift + 'px');
+        }
+        function handler(e) {
+          var el = e.target.closest && e.target.closest('.pos-abbr, .xref-corrected');
+          if (el) adjust(el);
+        }
+        document.addEventListener('mouseover', handler);
+        document.addEventListener('focusin', handler);
+        document.addEventListener('touchstart', handler, { passive: true });
+      })();
+    </script>
     <button class="back-to-top" type="button" aria-label="Back to top">↑</button>
     <script is:inline>
       (function () {
