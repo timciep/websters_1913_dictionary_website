@@ -70,18 +70,26 @@ const jsonLd = {
 };
 ---
 <Base title={title} description={description} jsonLd={jsonLd}>
-  <AlphaNav current={group.letter} />
+  <details class="alpha-accordion" slot="header-extra">
+    <summary>Browse other letters</summary>
+    <AlphaNav current={group.letter} />
+  </details>
 
-  <h2>{group.label === '#' ? 'Numbers & Symbols' : group.label}</h2>
-  <p class="browse-count">{group.count.toLocaleString('en-US')} entries</p>
+  <div class="browse-hero">
+    <h2 class="browse-letter">{group.label === '#' ? 'Numbers & Symbols' : group.label}</h2>
+    <p class="browse-count">{group.count.toLocaleString('en-US')} entries</p>
 
-  {useSubheadings && (
-    <nav class="browse-subnav" aria-label="Jump to prefix">
-      {subGroups.map((sg) => (
-        <a href={`#${sg.prefix}`}>{sg.label}</a>
-      ))}
-    </nav>
-  )}
+    {useSubheadings && (
+      <nav class="browse-subnav" aria-label="Jump to prefix">
+        {subGroups.map((sg) => (
+          <a href={`#${sg.prefix}`}>{sg.label}</a>
+        ))}
+      </nav>
+    )}
+
+  </div>
+
+ 
 
   {useSubheadings ? (
     subGroups.map((sg) => (

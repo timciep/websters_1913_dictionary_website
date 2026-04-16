@@ -6,6 +6,7 @@
   --accent: #6a3a1a;
   --link: #8b5e3c;
   --link-hover: #9a5f30;
+  --input-bg: white;
   --serif: 'Iowan Old Style', 'Palatino', 'Georgia', serif;
   --max: 38rem;
 }
@@ -18,11 +19,12 @@
   --accent: #c8864e;
   --link: #c8864e;
   --link-hover: #e0a56a;
+  --input-bg: #242120;
 }
-[data-theme="dark"] .search input,
+/* [data-theme="dark"] .search input,
 [data-theme="dark"] .search ul.results {
   background: #242120;
-}
+} */
 
 * { box-sizing: border-box; }
 
@@ -289,7 +291,7 @@ header.site h1 a {
   font-family: var(--serif);
   font-size: 1.1rem;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
-  background: white;
+  background: var(--input-bg);
   border: 1px solid var(--rule);
   border-radius: 4px;
   color: var(--ink);
@@ -305,7 +307,7 @@ header.site h1 a {
   position: absolute;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--input-bg);
   border: 1px solid var(--rule);
   border-radius: 4px;
   max-height: 22rem;
@@ -418,11 +420,42 @@ header.site h1 a {
 }
 
 /* Browse pages */
+.browse-hero {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.browse-letter {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.15rem;
+}
+.alpha-accordion {
+  margin-top: 0.75rem;
+}
+.alpha-accordion summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--link);
+  user-select: none;
+  width: fit-content;
+}
+.alpha-accordion summary:hover {
+  color: var(--link-hover);
+}
+.alpha-accordion .alpha-nav {
+  margin-top: 0.6rem;
+}
 .alpha-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
+}
+.alpha-nav a {
+  background: var(--input-bg);
 }
 .alpha-nav a,
 .alpha-nav span {
@@ -449,7 +482,7 @@ header.site h1 a {
 .browse-count {
   color: var(--ink-soft);
   font-size: 0.9rem;
-  margin: 0 0 1.5rem;
+  margin: 0 0 0.75rem;
 }
 
 .browse-subnav {
@@ -506,11 +539,19 @@ header.site h1 a {
 }
 
 .browse-subhead {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   color: var(--accent);
-  margin: 1.25rem 0 0.4rem;
+  margin: 2rem 0 0.5rem;
   break-after: avoid;
+}
+.browse-subhead:first-of-type {
+  margin-top: 1rem;
+}
+.browse-list + .browse-subhead {
+  border-top: 1px solid var(--rule);
+  padding-top: 1.5rem;
 }
 
 .browse-list {

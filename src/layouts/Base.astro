@@ -124,7 +124,16 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
           btn.classList.toggle('visible', window.scrollY > 400);
         }, { passive: true });
         btn.addEventListener('click', function () {
-          window.scrollTo(0, 0);
+          var start = window.scrollY;
+          var startTime = performance.now();
+          var duration = 150;
+          function step(now) {
+            var t = Math.min((now - startTime) / duration, 1);
+            t = t * (2 - t);
+            window.scrollTo(0, start * (1 - t));
+            if (t < 1) requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
         });
       })();
     </script>
