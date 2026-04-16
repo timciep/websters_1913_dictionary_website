@@ -51,7 +51,11 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
     </script>
     <script>
       import posthog from 'posthog-js';
-      if (import.meta.env.PROD) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('notrack')) {
+        sessionStorage.setItem('notrack', '1');
+      }
+      if (import.meta.env.PROD && !sessionStorage.getItem('notrack')) {
         posthog.init('phc_GfY3dabf0Wl6qxjCqqCz8mXtbiRq9A9OuQhTX4CqpSr', {
           api_host: 'https://us.i.posthog.com',
           defaults: '2026-01-30',
