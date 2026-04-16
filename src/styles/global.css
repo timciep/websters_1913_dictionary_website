@@ -145,6 +145,7 @@ header.site h1 a {
 }
 .entry .pos-abbr::after {
   content: attr(data-expand);
+  display: none;
   position: absolute;
   left: 50%;
   bottom: calc(100% + 0.35em);
@@ -160,14 +161,12 @@ header.site h1 a {
   width: max-content;
   max-width: calc(100vw - 1rem);
   text-align: center;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.12s ease-out;
   z-index: 5;
 }
 .entry .pos-abbr:hover::after,
 .entry .pos-abbr:focus::after {
-  opacity: 1;
+  display: block;
 }
 .entry .xref-corrected {
   position: relative;
@@ -186,6 +185,7 @@ header.site h1 a {
 }
 .entry .xref-corrected::after {
   content: attr(data-expand);
+  display: none;
   position: absolute;
   left: 50%;
   bottom: calc(100% + 0.35em);
@@ -201,14 +201,12 @@ header.site h1 a {
   width: max-content;
   max-width: calc(100vw - 1rem);
   text-align: center;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.12s ease-out;
   z-index: 5;
 }
 .entry .xref-corrected:hover::after,
 .entry .xref-corrected:focus::after {
-  opacity: 1;
+  display: block;
 }
 .entry .xref-corrected:hover {
   color: var(--link-hover);
