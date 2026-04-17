@@ -12,7 +12,7 @@ const count = formTotal.toLocaleString('en-US');
   description={`A complete, searchable copy of Webster's Revised Unabridged Dictionary of 1913 — ${count} headwords with instant autocomplete, clickable cross-references, and abbreviation hints.`}
 >
   <div class="home-browse" slot="header-extra">
-    <div class="home-browse-label">Browse</div>
+    <div class="home-label">Browse</div>
     <AlphaNav />
   </div>
 
@@ -28,23 +28,25 @@ const count = formTotal.toLocaleString('en-US');
   
 
   <section class="features">
+    <div class="home-label">Features</div>
+
     <ul>
       <li>
-        <strong>Instant autocomplete.</strong> Start typing and results
+        <span class="feature">Instant autocomplete.</span> Start typing and results
         appear as you go.
       </li>
       <li>
-        <strong>Clickable cross-references.</strong> When a definition
+        <span class="feature">Clickable cross-references.</span> When a definition
         points you to another word, it's a link. Follow the dictionary's
         own trail from entry to entry.
       </li>
       <li>
-        <strong>Abbreviation hints.</strong> Hover (or tap) scholarly
+        <span class="feature">Abbreviation hints.</span> Hover (or tap) scholarly
         shorthand like <em>Cf.</em>, <em>e.g.</em>, <em>OF.</em>, or
         <em>imp. of</em> to see what it stands for.
       </li>
       <li>
-        <strong>Look up any word you see.</strong> Double-click,
+        <span class="feature">Look up any word you see.</span> Double-click,
         long-press, or select a word anywhere on the page and a small
         pill appears offering to jump straight to its entry.
       </li>
