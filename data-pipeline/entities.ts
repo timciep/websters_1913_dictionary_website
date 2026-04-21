@@ -183,9 +183,12 @@ export function resolveEntity(name: string): string {
  * Replace all `<NAME/` self-closing entity tags in `text`.
  */
 export function expandEntities(text: string): string {
+  // `<?/` is a GCIDE placeholder for Greek (and other non-Latin) words the
+  // digitizers couldn't transcribe. Collapse runs of them into a single marker.
+  const withPlaceholders = text.replace(/<\?\/(\s*<\?\/)*/g, '{not transcribed}');
   // Match <name/ where name is letters/digits and the / is NOT followed by `>`
   // (those are normal self-closing XML tags). GCIDE's malformed form ends in `/`.
-  return text.replace(/<([A-Za-z][A-Za-z0-9]*)\/(?!>)/g, (_m, name: string) => {
+  return withPlaceholders.replace(/<([A-Za-z][A-Za-z0-9]*)\/(?!>)/g, (_m, name: string) => {
     return resolveEntity(name);
   });
 }
