@@ -54,7 +54,17 @@ function decodeXmlEscapes(s: string): string {
 }
 
 function clean(s: string): string {
-  return normalizeWhitespace(decodeXmlEscapes(stripTags(s))).replace(/\s+([,.;:!?])/g, '$1');
+  return normalizeWhitespace(decodeXmlEscapes(stripTags(s)))
+    .replace(/\x00BR\x00/g, '') // drop line-break sentinels in non-quote contexts
+    .replace(/\s+([,.;:!?])/g, '$1');
+}
+
+/** Like clean(), but converts <br/ sentinels to newlines (for verse/poetry). */
+function cleanQuote(s: string): string {
+  return normalizeWhitespace(decodeXmlEscapes(stripTags(s)))
+    .replace(/\s*\x00BR\x00\s*/g, '\n')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .trim();
 }
 
 // `(?)` is an editorial shorthand in the GCIDE source meaning "pronounced as
@@ -144,7 +154,7 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
   // Quotations may appear in the same block as the def, or in their own block.
   const quotations = allTags(block, 'q').map((qBlock) => {
     // qau (author) may appear OUTSIDE the <q>...</q> in the same paragraph.
-    return { text: clean(qBlock) };
+    return { text: cleanQuote(qBlock) };
   });
   // Look for authors in the surrounding block (after the </q>).
   const authorMatches = allTags(block, 'qau').map((s) => clean(s));

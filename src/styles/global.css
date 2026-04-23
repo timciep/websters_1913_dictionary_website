@@ -264,6 +264,7 @@ header.site h1 a {
   border-left: 2px solid var(--rule);
   color: var(--ink-soft);
   font-style: italic;
+  white-space: pre-line;
 }
 .entry .quote .author {
   display: block;

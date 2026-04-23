@@ -139,6 +139,8 @@ const NAMED: Record<string, string> = {
   sharp: '♯',
   flat: '♭',
   natural: '♮',
+  // Structural
+  br: '\x00BR\x00', // sentinel for line breaks; converted to \n by cleanQuote()
 };
 
 // Letters that may be combined with diacritics (uppercase + lowercase a–z)
