@@ -152,7 +152,7 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
   const sn = firstTag(block, 'sn');
   const def = firstTag(block, 'def');
   // Quotations may appear in the same block as the def, or in their own block.
-  const quotations = allTags(block, 'q').map((qBlock) => {
+  const quotations: { text: string; author?: string }[] = allTags(block, 'q').map((qBlock) => {
     // qau (author) may appear OUTSIDE the <q>...</q> in the same paragraph.
     return { text: cleanQuote(qBlock) };
   });
