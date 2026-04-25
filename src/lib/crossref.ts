@@ -20,10 +20,20 @@ export function escapeHtml(s: string): string {
 // Most entries are language abbreviations from the etymology brackets
 // (Webster's 1913 cites cognates in dozens of languages with terse caps).
 // A few — Cf., e.g., i.e., viz., Fig., Prob., Pref. — are scholarly
-// shorthands that also crop up inside definitions. Single-letter cases
-// (F., L., D., G., W., E., Sp.) are deliberately skipped: they collide
-// with author initials, "D.C.", "Sp. gr." (specific gravity), Fahrenheit,
-// and end-of-sentence captures.
+// shorthands that also crop up inside definitions.
+//
+// Single-letter language codes (F., L., G., E., D., W.) collide with
+// author initials, "D.C.", "Sp. gr." (specific gravity), Fahrenheit
+// ("100° F."), and end-of-sentence captures. We match them only inside
+// an open etymology bracket — lookbehind `\[[^\]]*` requires a preceding
+// `[` with no intervening `]` — and reject anything followed by
+// `\s*[A-Z]` to skip both initials ("F. M. Smith") and adjacent-capital
+// runs ("D.C."). This loses a handful of stray language refs in
+// free-prose definitions (e.g. "(5) French à (L. ad)") but keeps every
+// false-positive context out. Sp. (Spanish) is multi-letter and could
+// be added similarly, but stays out for now: "Sp. gr." (specific
+// gravity) appears in definitions, not etymology brackets, so the
+// bracket gate would already cover it — fine to revisit if needed.
 const ABBR_HINTS: Array<[RegExp, string]> = [
   // Scholarly shorthands
   [/\bCf\./g, 'compare'],
@@ -62,9 +72,12 @@ const ABBR_HINTS: Array<[RegExp, string]> = [
   [/\bSw\./g, 'Swedish'],
   [/\bPers\./g, 'Persian'],
   [/\bTurk\./g, 'Turkish'],
-  [/\bF\./g, 'French'],
-  [/\bL\./g, 'Latin'],
-  [/\bG\./g, 'German'],
+  [/(?<=\[[^\]]*)\bF\.(?!\s*[A-Z])/g, 'French'],
+  [/(?<=\[[^\]]*)\bL\.(?!\s*[A-Z])/g, 'Latin'],
+  [/(?<=\[[^\]]*)\bG\.(?!\s*[A-Z])/g, 'German'],
+  [/(?<=\[[^\]]*)\bE\.(?!\s*[A-Z])/g, 'English'],
+  [/(?<=\[[^\]]*)\bD\.(?!\s*[A-Z])/g, 'Dutch'],
+  [/(?<=\[[^\]]*)\bW\.(?!\s*[A-Z])/g, 'Welsh'],
 ];
 
 // Inflection abbreviations that introduce a "form-of" pointer in cross-
