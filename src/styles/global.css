@@ -258,6 +258,12 @@ header.site h1 a {
     inset: -8px;
   }
 }
+.entry .usage,
+.entry .attribution {
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 0.9em;
+}
 .entry .quote {
   margin: 0.9rem 0 1rem;
   padding: 0.15rem 0 0.2rem 1.25rem;

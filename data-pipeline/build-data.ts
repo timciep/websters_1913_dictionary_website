@@ -36,6 +36,8 @@ export interface EntryFormRecord {
     number?: string;
     definition: string;
     quotations: { text: string; author?: string }[];
+    usage?: string;
+    attribution?: string;
     source?: string;
   }[];
 }

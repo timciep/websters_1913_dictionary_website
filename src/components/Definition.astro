@@ -55,6 +55,8 @@ function sourceTooltip(source: string): string {
           <div class="num">{sense.number ?? ''}</div>
           <div class="body">
             <Fragment set:html={renderDefinition(sense.definition, knownSlugs)} />
+            {sense.usage && <span class="usage"> [{sense.usage}]</span>}
+            {sense.attribution && <span class="attribution"> — {formatAuthor(sense.attribution)}</span>}
             {sourceLabel(sense.source) && (
               <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(sense.source!)}>
                 <IconInfo />
@@ -62,7 +64,7 @@ function sourceTooltip(source: string): string {
             )}
             {sense.quotations.map((q) => (
               <div class="quote">
-                <span>{q.text}</span>
+                {q.text && <span>{q.text}</span>}
                 {q.author && <span class="author">— {formatAuthor(q.author)}</span>}
               </div>
             ))}

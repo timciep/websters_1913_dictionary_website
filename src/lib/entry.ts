@@ -11,6 +11,8 @@ export interface Sense {
   number?: string;
   definition: string; // may contain <er>...</er> cross-references
   quotations: Quotation[];
+  usage?: string; // expanded usage label, e.g. "Obsolete", "Provincial English"
+  attribution?: string; // bare-author attribution for the sense (no quote text)
   source?: string; // e.g. "1913 Webster", "PJC", "WordNet 1.5"
 }
 

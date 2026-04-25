@@ -18,6 +18,8 @@ export interface Sense {
   number?: string;
   definition: string; // HTML-safe (no <a> yet — that's added later by crossref pass)
   quotations: { text: string; author?: string }[];
+  usage?: string; // expanded <mark> label, e.g. "Obsolete", "Provincial English"
+  attribution?: string; // <rj><au> following a def with no inline quote
   source?: string; // e.g. "1913 Webster", "PJC", "WordNet 1.5"
 }
 
@@ -151,18 +153,57 @@ export function parseGcideFile(raw: string): RawEntry[] {
 function pushSenseFromBlock(block: string, entry: RawEntry): void {
   const sn = firstTag(block, 'sn');
   const def = firstTag(block, 'def');
-  // Quotations may appear in the same block as the def, or in their own block.
-  const quotations: { text: string; author?: string }[] = allTags(block, 'q').map((qBlock) => {
-    // qau (author) may appear OUTSIDE the <q>...</q> in the same paragraph.
-    return { text: cleanQuote(qBlock) };
-  });
-  // Look for authors in the surrounding block (after the </q>).
-  const authorMatches = allTags(block, 'qau').map((s) => clean(s));
-  if (authorMatches.length > 0 && quotations.length > 0) {
-    // Pair them up positionally.
-    for (let i = 0; i < quotations.length; i++) {
-      if (authorMatches[i]) quotations[i].author = authorMatches[i];
+
+  // Standard <q>...</q> quotations.
+  const quotations: { text: string; author?: string }[] = allTags(block, 'q').map((qBlock) => ({
+    text: cleanQuote(qBlock),
+  }));
+  const qauAuthors = allTags(block, 'qau').map((s) => clean(s));
+  for (let i = 0; i < quotations.length && i < qauAuthors.length; i++) {
+    if (qauAuthors[i]) quotations[i].author = qauAuthors[i];
+  }
+
+  // The remaining extractions (inline “…” citations, bare <au> attributions,
+  // <mark> usage labels) only make sense for sense-bearing blocks (those with
+  // a <def>). Other blocks like <syn>, <note>, <cs> may contain typographic
+  // quotes or `<au>` references as part of editorial prose, and we don't want
+  // to misattribute those to the previous sense.
+  let attribution: string | undefined;
+  let usage: string | undefined;
+  if (def) {
+    // Strip the def body (and any <q> body) so we don't pick up quotes that
+    // legitimately appear inside def prose.
+    const tail = block
+      .replace(/<def>[\s\S]*?<\/def>/g, '')
+      .replace(/<q>[\s\S]*?<\/q>/g, '');
+
+    // Inline citation quotes: many entries use <ldquo/.../<rdquo/ + trailing
+    // <au> (often wrapped in <rj>) instead of the formal <q>/<qau> structure.
+    // After expandEntities those entity tags are already U+201C / U+201D.
+    const inlineQuotes: { text: string; author?: string }[] = [];
+    for (const m of tail.matchAll(/“([\s\S]+?)”/g)) {
+      const text = cleanQuote(m[1]);
+      if (text) inlineQuotes.push({ text });
     }
+    const tailAuthors = Array.from(tail.matchAll(/<au>([\s\S]*?)<\/au>/g)).map((m) =>
+      clean(m[1]),
+    );
+    for (let i = 0; i < inlineQuotes.length && i < tailAuthors.length; i++) {
+      if (tailAuthors[i]) inlineQuotes[i].author = tailAuthors[i];
+    }
+    quotations.push(...inlineQuotes);
+    // Leftover author with no inline quote → sense-level attribution
+    // (e.g. <def>A gabeler.</def> <rj><au>Carlyle.</au></rj>).
+    if (tailAuthors.length > inlineQuotes.length) {
+      attribution = tailAuthors[inlineQuotes.length];
+    }
+
+    // Usage label(s) from <mark>…</mark>. Expand abbreviations
+    // (Obs. → Obsolete, Prov. Eng. → Provincial English, …).
+    const usageMarks = Array.from(tail.matchAll(/<mark>([\s\S]*?)<\/mark>/g)).map((m) =>
+      clean(m[1]),
+    );
+    if (usageMarks.length > 0) usage = expandUsageMarkers(usageMarks);
   }
 
   // Extract source attribution(s) from the block. GCIDE marks each block with
@@ -177,6 +218,8 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
       // Keep <er> tags so the crossref pass can linkify them; strip everything else.
       definition: postProcessDef(def),
       quotations,
+      usage,
+      attribution,
       source: primarySource || undefined,
     });
   } else if (quotations.length > 0 && entry.senses.length > 0) {
@@ -192,4 +235,67 @@ function postProcessDef(def: string): string {
     /\s+([,.;:!?])/g,
     '$1',
   );
+}
+
+// Expansions for GCIDE usage abbreviations found inside <mark>…</mark>. Most
+// abbreviations have a trailing period in source, but a small minority don't
+// (e.g. `<mark>Fig</mark>.` puts the period outside the tag). The matcher
+// uses lookbehind/lookahead to anchor on letter boundaries, so we list both
+// dotted and bare forms where they occur. Apply longest keys first so e.g.
+// `Prov. Eng.` resolves before `Eng.`.
+const USAGE_EXPANSIONS: Record<string, string> = {
+  // Status / register
+  'Obs.': 'Obsolete',
+  'Obs': 'Obsolete',
+  'obs.': 'obsolete',
+  'obs': 'obsolete',
+  'Obsoles.': 'Obsolescent',
+  'Archaic.': 'Archaic',
+  'R.': 'Rare',
+  'Colloq.': 'Colloquial',
+  'Colloq': 'Colloquial',
+  'colloq.': 'colloquial',
+  'Coloq.': 'Colloquial',
+  'Inform.': 'Informal',
+  'Hist.': 'Historical',
+  'Dial.': 'Dialectal',
+  'Fig.': 'Figurative',
+  'Fig': 'Figurative',
+  'fig.': 'figurative',
+  'fig': 'figurative',
+  'Derog.': 'Derogatory',
+  'derog.': 'derogatory',
+  'Abbrev.': 'Abbreviation',
+  'abbr.': 'abbreviation',
+  // Regional
+  'Prov. Eng.': 'Provincial English',
+  'Great Brit.': 'Great Britain',
+  'Eng.': 'English',
+  'Engl.': 'English',
+  'Scot.': 'Scottish',
+  'Brit.': 'British',
+  'U. S.': 'United States',
+  'U.S.': 'United States',
+};
+
+function expandUsageMarkers(marks: string[]): string {
+  const expanded = marks
+    .map((m) => expandUsageString(m.replace(/^[\[({]+|[\])}]+$/g, '').trim()))
+    .filter((s) => s.length > 0);
+  return Array.from(new Set(expanded)).join('; ');
+}
+
+function expandUsageString(s: string): string {
+  let out = s;
+  const sorted = Object.keys(USAGE_EXPANSIONS).sort((a, b) => b.length - a.length);
+  for (const key of sorted) {
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Letter boundaries on both sides: keeps `R.` from matching inside `Mr.`,
+    // and keeps bare `Fig` from matching inside `Figure`.
+    out = out.replace(
+      new RegExp(`(?<![A-Za-z])${escaped}(?![A-Za-z])`, 'g'),
+      USAGE_EXPANSIONS[key],
+    );
+  }
+  return out;
 }
