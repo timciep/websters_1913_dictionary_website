@@ -42,8 +42,9 @@ export interface EntryFormRecord {
     attribution?: string;
     source?: string;
   }[];
-  notes?: { text: string; source?: string; forPhrases?: boolean }[];
+  notes?: { text: string; source?: string; forPhrases?: boolean; afterSenseIndex?: number }[];
   collocations?: Collocation[];
+  phrasesAfterSenseIndex?: number;
 }
 
 export interface EntryPageRecord {
@@ -137,6 +138,7 @@ function addForm(e: RawEntry, pages: Map<string, EntryPageRecord>): EntryFormRec
     senses: e.senses,
     notes: e.notes,
     collocations: e.collocations,
+    phrasesAfterSenseIndex: e.phrasesAfterSenseIndex,
   };
 
   const existing = pages.get(slug);

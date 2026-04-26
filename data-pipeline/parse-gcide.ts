@@ -47,8 +47,14 @@ export interface RawEntry {
   partOfSpeech?: string;
   etymology?: string;
   senses: Sense[];
-  notes?: { text: string; source?: string; forPhrases?: boolean }[]; // editorial notes; HTML may contain <i>
+  // editorial notes; HTML may contain <i>. `afterSenseIndex` is the count of
+  // senses present at the start of the <p> block where this note appeared, so
+  // the renderer can place it at its source position relative to senses.
+  notes?: { text: string; source?: string; forPhrases?: boolean; afterSenseIndex?: number }[];
   collocations?: Collocation[]; // compound sub-entries from <cs>/<col>/<cd>
+  // Position (in senses-rendered-so-far) of the first <cs> block, so the
+  // Phrases bundle can render at its source position rather than always at the end.
+  phrasesAfterSenseIndex?: number;
 }
 
 // ---------- helpers ----------
@@ -197,6 +203,11 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
   const sources = allTags(block, 'source').map((s) => s.trim());
   const primarySource = sources.find((s) => s && !s.startsWith('+')) ?? sources[0];
 
+  // Snapshot the sense count BEFORE this block contributes anything. Notes and
+  // the Phrases bundle anchor to this index so the renderer can interleave them
+  // between the senses that came before and the senses (if any) added below.
+  const senseIndex = entry.senses.length;
+
   // <note> blocks carry editorial commentary (e.g. the Gender entry's discussion
   // of historical sex/gender usage). They can appear either as their own
   // continuation paragraph or alongside a sense — collect them either way, and
@@ -217,6 +228,7 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
         text,
         source: primarySource || undefined,
         forPhrases: noteFollowsCs || undefined,
+        afterSenseIndex: senseIndex,
       });
     }
   }
@@ -227,6 +239,9 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
     const cols = parseCollocations(csBody);
     if (cols.length > 0) {
       entry.collocations ??= [];
+      if (entry.phrasesAfterSenseIndex === undefined) {
+        entry.phrasesAfterSenseIndex = senseIndex;
+      }
       for (const c of cols) {
         if (primarySource) c.source = primarySource;
         entry.collocations.push(c);

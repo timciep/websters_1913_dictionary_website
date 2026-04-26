@@ -1,5 +1,5 @@
 ---
-import type { EntryPage } from '../lib/entry';
+import type { EntryForm, EntryPage, Sense } from '../lib/entry';
 import { renderDefinition, renderInlineHtml } from '../lib/crossref';
 import { expandPos } from '../lib/pos';
 import { formatAuthor } from '../lib/authors';
@@ -26,6 +26,35 @@ function sourceLabel(source: string | undefined): string | undefined {
 function sourceTooltip(source: string): string {
   return `Added by ${source} — not in the original 1913 edition`;
 }
+
+type FormNote = NonNullable<EntryForm['notes']>[number];
+type FormItem =
+  | { kind: 'sense'; sense: Sense }
+  | { kind: 'note'; note: FormNote }
+  | { kind: 'phrases' };
+
+// Walk the form's senses in order and interleave notes / the Phrases bundle at
+// their source-order anchor positions. Notes anchored at index N render between
+// senses N-1 and N; the Phrases bundle anchors to the position of the first
+// <cs> block in the GCIDE source. Stale records without anchors fall back to
+// "render at the end".
+function buildFormItems(form: EntryForm): FormItem[] {
+  const nonPhraseNotes = (form.notes ?? []).filter((n) => !n.forPhrases);
+  const hasPhrases = !!(form.collocations && form.collocations.length > 0);
+  const phrasesAt = hasPhrases
+    ? Math.min(form.phrasesAfterSenseIndex ?? form.senses.length, form.senses.length)
+    : -1;
+  const items: FormItem[] = [];
+  for (let i = 0; i <= form.senses.length; i++) {
+    for (const n of nonPhraseNotes) {
+      const at = Math.min(n.afterSenseIndex ?? form.senses.length, form.senses.length);
+      if (at === i) items.push({ kind: 'note', note: n });
+    }
+    if (phrasesAt === i) items.push({ kind: 'phrases' });
+    if (i < form.senses.length) items.push({ kind: 'sense', sense: form.senses[i] });
+  }
+  return items;
+}
 ---
 <article class="entry">
   <div class="entry-header">
@@ -46,89 +75,87 @@ function sourceTooltip(source: string): string {
       </p>
       {form.etymology && <p class="ety" set:html={renderDefinition(form.etymology, knownSlugs)} />}
 
-      {form.senses.map((sense) => (
-        <div class="sense">
-          <div class="num">{sense.number ?? sense.subSense ?? ''}</div>
-          <div class="body">
-            {sense.number && sense.subSense && <span class="sub-sense">{sense.subSense} </span>}
-            {sense.field && <span class="field" set:html={renderDefinition(sense.field, knownSlugs) + ' '} />}
-            <Fragment set:html={renderDefinition(sense.definition, knownSlugs)} />
-            {sense.usage && <span class="usage"> [{sense.usage}]</span>}
-            {sense.attribution && <span class="attribution"> — {formatAuthor(sense.attribution)}</span>}
-            {sourceLabel(sense.source) && (
-              <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(sense.source!)}>
+      {buildFormItems(form).map((item) => (
+        item.kind === 'sense' ? (
+          <div class="sense">
+            <div class="num">{item.sense.number ?? item.sense.subSense ?? ''}</div>
+            <div class="body">
+              {item.sense.number && item.sense.subSense && <span class="sub-sense">{item.sense.subSense} </span>}
+              {item.sense.field && <span class="field" set:html={renderDefinition(item.sense.field, knownSlugs) + ' '} />}
+              <Fragment set:html={renderDefinition(item.sense.definition, knownSlugs)} />
+              {item.sense.usage && <span class="usage"> [{item.sense.usage}]</span>}
+              {item.sense.attribution && <span class="attribution"> — {formatAuthor(item.sense.attribution)}</span>}
+              {sourceLabel(item.sense.source) && (
+                <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(item.sense.source!)}>
+                  <IconInfo />
+                </span>
+              )}
+              {item.sense.quotations.map((q) => (
+                <div class="quote">
+                  {q.text && <span set:html={renderInlineHtml(q.text)} />}
+                  {q.author && <span class="author">— {formatAuthor(q.author)}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : item.kind === 'note' ? (
+          <p class="note">
+            <Fragment set:html={renderDefinition(item.note.text, knownSlugs)} />
+            {sourceLabel(item.note.source) && (
+              <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(item.note.source!)}>
                 <IconInfo />
               </span>
             )}
-            {sense.quotations.map((q) => (
-              <div class="quote">
-                {q.text && <span set:html={renderInlineHtml(q.text)} />}
-                {q.author && <span class="author">— {formatAuthor(q.author)}</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {form.notes && form.notes.filter((n) => !n.forPhrases).map((n) => (
-        <p class="note">
-          <Fragment set:html={renderDefinition(n.text, knownSlugs)} />
-          {sourceLabel(n.source) && (
-            <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(n.source!)}>
-              <IconInfo />
-            </span>
-          )}
-        </p>
-      ))}
-
-      {form.collocations && form.collocations.length > 0 && (
-        <details class="collocations">
-          <summary class="collocations-label">Phrases ({form.collocations.length})</summary>
-          {form.collocations.map((col) => (
-            <div class="collocation">
-              <span class="col-terms">
-                {col.terms.map((t, i) => (
-                  <>
-                    {i > 0 && <span class="col-or"> or </span>}
-                    <b>{t}</b>
-                  </>
-                ))}
-              </span>
-              {col.field && <span class="field" set:html={' ' + renderDefinition(col.field, knownSlugs)} />}
-              {sourceLabel(col.source) && (
-                <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(col.source!)}>
-                  <IconInfo />
-                </span>
-              )}
-              {col.defs.map((d, i) => (
-                <span class="col-def">
-                  {i === 0 ? ', ' : ' '}
-                  {d.subSense && <span class="sub-sense">{d.subSense} </span>}
-                  <Fragment set:html={renderDefinition(d.definition, knownSlugs)} />
-                  {d.usage && <span class="usage"> [{d.usage}]</span>}
-                  {d.attribution && <span class="attribution"> — {formatAuthor(d.attribution)}</span>}
-                  {d.quotations.map((q) => (
-                    <span class="quote col-quote">
-                      {q.text && <span set:html={renderInlineHtml(q.text)} />}
-                      {q.author && <span class="author">— {formatAuthor(q.author)}</span>}
-                    </span>
+          </p>
+        ) : (
+          <details class="collocations">
+            <summary class="collocations-label">Collocations ({form.collocations!.length})</summary>
+            {form.collocations!.map((col) => (
+              <div class="collocation">
+                <span class="col-terms">
+                  {col.terms.map((t, i) => (
+                    <>
+                      {i > 0 && <span class="col-or"> or </span>}
+                      <b>{t}</b>
+                    </>
                   ))}
                 </span>
-              ))}
-            </div>
-          ))}
-          {form.notes && form.notes.filter((n) => n.forPhrases).map((n) => (
-            <p class="note phrase-note">
-              <Fragment set:html={renderDefinition(n.text, knownSlugs)} />
-              {sourceLabel(n.source) && (
-                <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(n.source!)}>
-                  <IconInfo />
-                </span>
-              )}
-            </p>
-          ))}
-        </details>
-      )}
+                {col.field && <span class="field" set:html={' ' + renderDefinition(col.field, knownSlugs)} />}
+                {sourceLabel(col.source) && (
+                  <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(col.source!)}>
+                    <IconInfo />
+                  </span>
+                )}
+                {col.defs.map((d, i) => (
+                  <span class="col-def">
+                    {i === 0 ? ', ' : ' '}
+                    {d.subSense && <span class="sub-sense">{d.subSense} </span>}
+                    <Fragment set:html={renderDefinition(d.definition, knownSlugs)} />
+                    {d.usage && <span class="usage"> [{d.usage}]</span>}
+                    {d.attribution && <span class="attribution"> — {formatAuthor(d.attribution)}</span>}
+                    {d.quotations.map((q) => (
+                      <span class="quote col-quote">
+                        {q.text && <span set:html={renderInlineHtml(q.text)} />}
+                        {q.author && <span class="author">— {formatAuthor(q.author)}</span>}
+                      </span>
+                    ))}
+                  </span>
+                ))}
+              </div>
+            ))}
+            {(form.notes ?? []).filter((n) => n.forPhrases).map((n) => (
+              <p class="note phrase-note">
+                <Fragment set:html={renderDefinition(n.text, knownSlugs)} />
+                {sourceLabel(n.source) && (
+                  <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(n.source!)}>
+                    <IconInfo />
+                  </span>
+                )}
+              </p>
+            ))}
+          </details>
+        )
+      ))}
 
       {form.variants.length > 0 && (
         <p class="variants">Also: {form.variants.join(', ')}</p>

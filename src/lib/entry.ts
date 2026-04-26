@@ -45,8 +45,14 @@ export interface EntryForm {
   partOfSpeech?: string;
   etymology?: string;
   senses: Sense[];
-  notes?: { text: string; source?: string; forPhrases?: boolean }[]; // editorial notes; text may contain <i>
+  // editorial notes; text may contain <i>. `afterSenseIndex` is the source-order
+  // anchor: the count of senses present at the start of the <p> block where the
+  // note appeared. Renderer interleaves notes between senses by this index.
+  notes?: { text: string; source?: string; forPhrases?: boolean; afterSenseIndex?: number }[];
   collocations?: Collocation[];
+  // Source-order anchor for the Phrases bundle (count of senses at the start of
+  // the first <cs> block). Undefined means "render at the end" (legacy data).
+  phrasesAfterSenseIndex?: number;
 }
 
 export interface EntryPage {
