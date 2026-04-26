@@ -84,16 +84,6 @@ function sourceTooltip(source: string): string {
       {form.collocations && form.collocations.length > 0 && (
         <details class="collocations">
           <summary class="collocations-label">Phrases ({form.collocations.length})</summary>
-          {form.notes && form.notes.filter((n) => n.forPhrases).map((n) => (
-            <p class="note phrase-note">
-              <Fragment set:html={renderDefinition(n.text, knownSlugs)} />
-              {sourceLabel(n.source) && (
-                <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(n.source!)}>
-                  <IconInfo />
-                </span>
-              )}
-            </p>
-          ))}
           {form.collocations.map((col) => (
             <div class="collocation">
               <span class="col-terms">
@@ -126,6 +116,16 @@ function sourceTooltip(source: string): string {
                 </span>
               ))}
             </div>
+          ))}
+          {form.notes && form.notes.filter((n) => n.forPhrases).map((n) => (
+            <p class="note phrase-note">
+              <Fragment set:html={renderDefinition(n.text, knownSlugs)} />
+              {sourceLabel(n.source) && (
+                <span class="pos-abbr source-info" tabindex="0" data-expand={sourceTooltip(n.source!)}>
+                  <IconInfo />
+                </span>
+              )}
+            </p>
           ))}
         </details>
       )}
