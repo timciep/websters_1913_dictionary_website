@@ -141,6 +141,7 @@ const NAMED: Record<string, string> = {
   natural: '♮',
   // Structural
   br: '\x00BR\x00', // sentinel for line breaks; converted to \n by cleanQuote()
+  hand: '', // manicule (☞) — decorative pointer prefacing usage notes; drop
 };
 
 // Letters that may be combined with diacritics (uppercase + lowercase a–z)

@@ -146,14 +146,17 @@ it, do it the same way `postProcessDef` does for definitions: keep `<er>`
 tags in the etymology field and run `renderDefinition` on it at render
 time).
 
-## Abbreviation tooltips ("hints")
+## Abbreviation expansions
 
-`src/lib/crossref.ts` wraps scholarly and language abbreviations in
-`<abbr class="pos-abbr" tabindex="0" data-expand="...">` tags so readers
-get a tooltip on hover/focus. When the user says **"add a tooltip"** or
-**"add a hint"** for an abbreviation, this is where it goes.
+`src/lib/crossref.ts` replaces scholarly, language, and subject-area
+abbreviations with their spelled-out form inline (e.g. `(Bot.)` →
+`(botany)`, `Cf.` → `Compare`, `[OF. <i>foo</i>]` →
+`[Old French <i>foo</i>]`). The headword's part-of-speech label is
+expanded the same way in `src/components/Definition.astro` via
+`expandPos()`. When the user says **"spell out X"** or **"expand X"**,
+this is where it goes.
 
-Two mechanisms, pick the right one:
+Three mechanisms, pick the right one:
 
 1. **`ABBR_HINTS`** — a list of `[RegExp, expansion]` pairs. Matches
    anywhere in the escaped text. Use this for:
@@ -163,26 +166,48 @@ Two mechanisms, pick the right one:
    - Longer patterns must come before their prefixes (regex is evaluated
      in order, and alternation inside a single regex isn't used here).
 
-2. **`INFLECTION_ABBRS`** — a list of strings compiled into one regex
+2. **`FIELD_ABBRS`** — a `Record<string, string>` mapping subject-area
+   abbreviations to expansions (`Bot.` → `botany`, `Gram.` → `grammar`,
+   `Zool.` → `zoology`, …). Compiled into one regex matched only inside
+   parens via `(?<=\([^)]*)…(?=[^(]*\))`, so it catches `(Bot.)` and the
+   second token in `(Bot. & Zool.)` while leaving identical strings in
+   author initials, citation sources, or free prose alone (`Her.`,
+   `Com. Prayer`, `Man. 11`). Add a new entry when GCIDE uses a field
+   marker the table doesn't cover yet — only add ones that are
+   unambiguous as field markers when seen inside parens.
+
+3. **`INFLECTION_ABBRS`** — a list of strings compiled into one regex
    with a `(?= of )` lookahead. Use this for part-of-speech / inflection
    abbreviations like `imp.`, `p. p.`, `p. pr. & a.` that would collide
    with author initials or end-of-sentence periods in free prose. They
-   only get annotated when followed by ` of ` (the canonical GCIDE
-   "form-of" stub shape, e.g. `imp. of <er>Run</er>`). Longer patterns
-   must come **before** their prefixes so alternation matches greedily
-   (`imp. & p. p.` before `imp.`). Expansions come from `expandPos()` in
-   `src/lib/pos.ts` — if a new inflection isn't covered there, add it.
+   only get expanded when followed by ` of ` (the canonical GCIDE
+   "form-of" stub shape, e.g. `imp. of <er>Run</er>` →
+   `imperfect of Run`). Longer patterns must come **before** their
+   prefixes so alternation matches greedily (`imp. & p. p.` before
+   `imp.`). Expansions come from `expandPos()` in `src/lib/pos.ts` — if
+   a new inflection isn't covered there, add it.
+
+**Capitalization rule:** `expandToText` capitalises the first letter of
+the expansion when the original abbreviation starts with an uppercase
+letter (`Cf.` → `Compare`, `cf.` → `compare`). Expansions that are
+already proper nouns (e.g. `Old French`, `Scripture`) pass through
+unchanged.
 
 **Deliberately skipped:** single-letter language codes (`F.`, `L.`, `D.`,
 `G.`, `W.`, `E.`, `Sp.`). They collide with author initials, `D.C.`,
 `Sp. gr.` (specific gravity), Fahrenheit, and end-of-sentence captures.
 Don't add these to `ABBR_HINTS` without a much cleverer matcher.
 
-**Ordering constraint:** `annotateAbbrs` runs on already-HTML-escaped
-text and emits literal markup. It must run *after* `escapeHtml` and
-*only* on the non-`<er>` segments (the `<er>` inner text is rendered as
-anchor/italic content and shouldn't be annotated). `renderDefinition`
+**Ordering constraint:** `expandAbbrs` runs on already-HTML-escaped
+text and emits plain text (no markup). It must run *after* `escapeHtml`
+and *only* on the non-`<er>` segments (the `<er>` inner text is rendered
+as anchor/italic content and shouldn't be expanded). `renderDefinition`
 already wires this up correctly.
+
+The CSS class `pos-abbr` still exists in `global.css` because the
+"added by GCIDE/WordNet" source-info badge in `Definition.astro` uses
+it for a hover tooltip — that badge is meta information, not an
+abbreviation expansion, so it stays as a tooltip.
 
 ## Build constraints
 
@@ -243,7 +268,7 @@ and a `[data-theme="dark"]` override block in `global.css`. The mechanism:
 | Add a new field to entry JSON | `data-pipeline/build-data.ts` (`EntryFormRecord`/`EntryPageRecord`, `addForm`) + `src/lib/entry.ts` (`EntryForm`/`EntryPage`) — keep them in sync |
 | Add a new GCIDE tag to extract | `data-pipeline/parse-gcide.ts` — add to `firstTag`/`allTags` calls in `parseGcideFile`/`pushSenseFromBlock` |
 | Add a missing special character | `data-pipeline/entities.ts` — `NAMED` table, or add a missing accent to `COMBINING` |
-| Add a tooltip/hint for an abbreviation | `src/lib/crossref.ts` — `ABBR_HINTS` for scholarly/language abbrevs, `INFLECTION_ABBRS` (+ `src/lib/pos.ts`) for `imp.`/`p. p.`-style form-of stubs. See "Abbreviation tooltips" section |
+| Spell out an abbreviation inline | `src/lib/crossref.ts` — `ABBR_HINTS` for scholarly/language abbrevs, `FIELD_ABBRS` for parenthetical subject-area markers like `(Bot.)`, `INFLECTION_ABBRS` (+ `src/lib/pos.ts`) for `imp.`/`p. p.`-style form-of stubs. See "Abbreviation expansions" section |
 | Fix a misspelled cross-reference | `src/lib/crossref.ts` — add to `SLUG_CORRECTIONS`. See "Cross-references" section |
 | Change slug rules | `src/lib/slug.ts` — **regenerate `data/` after** (`npm run data`) and rebuild the site, or all cross-references break |
 | Add a new page type | New file in `src/pages/`. Don't tangle it with `word/[slug].astro` |

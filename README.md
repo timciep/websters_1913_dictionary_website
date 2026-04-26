@@ -168,9 +168,22 @@ the deploy is just an upload of `dist/` — no server, no backend.
   The `<source>` tag in each GCIDE `<p>` block identifies the attribution;
   the pipeline preserves it and the site displays a label for anything not
   tagged `1913 Webster` or `Webster 1913 Suppl.`.
-- **Cross-references inside `<ety>` (etymology) blocks are not linkified.** The
-  parser currently strips all tags from etymology text. Easy to extend by
-  giving etymology the same treatment as definitions.
+- **GCIDE content the pipeline still discards.** Several tag types are
+  dropped during parsing. Each is a small parser change but most also need
+  a render decision (where on the page does this go?), so they're listed
+  rather than fixed:
+  - **Synonym essays (`<syn>`)** — ~10k blocks of comparative discussion
+    (e.g. the *Abase / Debase / Degrade* essay on `/word/abase/`).
+  - **Verb morphology (`<vmorph>`)** — ~6k blocks of inflected forms,
+    e.g. *imp. & p. p.* `Ran`*; p. pr. & vb. n.* `Running`.
+  - **Irregular plurals (`<plu>` / `<plw>`)** — ~3k blocks.
+  - **Antonyms (`<ant>`)** — ~1k blocks.
+  - **Explicit usage notes (`<usage>`)** — 572 blocks. Separate from the
+    bracketed register markers (`[Obs.]`, `[Colloq.]`, `[Prov. Eng.]`,
+    etc.), which the pipeline does extract and expand.
+  - **Secondary defs (`<def2>`), "Specifically:" prefixes (`<specif>`),
+    see-also pointers (`<see>`), illustration captions (`<illu>`)** — a
+    few hundred each.
 - **The search index is ~5 MB** because it's a flat JSON list of every
   headword. For lower bandwidth, consider switching to a serialized
   pre-built MiniSearch index, or sharding by first letter.

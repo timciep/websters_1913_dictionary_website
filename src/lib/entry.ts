@@ -9,11 +9,31 @@ export interface Quotation {
 
 export interface Sense {
   number?: string;
-  definition: string; // may contain <er>...</er> cross-references
+  subSense?: string; // sub-sense letter from <sd>, e.g. "(a)", "(b)"
+  field?: string; // domain label from <fld>, e.g. "(Bot.)", "(Astron.)"
+  definition: string; // may contain <er>...</er> and <i>...</i>
   quotations: Quotation[];
   usage?: string; // expanded usage label, e.g. "Obsolete", "Provincial English"
   attribution?: string; // bare-author attribution for the sense (no quote text)
   source?: string; // e.g. "1913 Webster", "PJC", "WordNet 1.5"
+}
+
+export interface CollocationDef {
+  subSense?: string; // (a), (b) when one collocation has multiple <cd> blocks
+  definition: string; // may contain <er>...</er> and <i>...</i>
+  quotations: Quotation[];
+  attribution?: string;
+  usage?: string;
+}
+
+// Compound sub-entry (e.g. "Word square" under "word"). Comes from GCIDE's
+// <cs>/<col>/<cd> tags. Variant spellings sharing one definition (from <mcol>)
+// land in the same `terms` array.
+export interface Collocation {
+  terms: string[];
+  field?: string;
+  defs: CollocationDef[];
+  source?: string;
 }
 
 // One spelling/POS variant of a headword. Multiple forms share a page when
@@ -25,6 +45,8 @@ export interface EntryForm {
   partOfSpeech?: string;
   etymology?: string;
   senses: Sense[];
+  notes?: { text: string; source?: string; forPhrases?: boolean }[]; // editorial notes; text may contain <i>
+  collocations?: Collocation[];
 }
 
 export interface EntryPage {

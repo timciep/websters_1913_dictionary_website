@@ -13,7 +13,7 @@
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseGcideFile, type RawEntry } from './parse-gcide.js';
+import { parseGcideFile, type RawEntry, type Collocation } from './parse-gcide.js';
 import { slugify } from '../src/lib/slug.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,12 +34,16 @@ export interface EntryFormRecord {
   etymology?: string;
   senses: {
     number?: string;
+    subSense?: string;
+    field?: string;
     definition: string;
     quotations: { text: string; author?: string }[];
     usage?: string;
     attribution?: string;
     source?: string;
   }[];
+  notes?: { text: string; source?: string; forPhrases?: boolean }[];
+  collocations?: Collocation[];
 }
 
 export interface EntryPageRecord {
@@ -131,6 +135,8 @@ function addForm(e: RawEntry, pages: Map<string, EntryPageRecord>): EntryFormRec
     partOfSpeech: e.partOfSpeech,
     etymology: e.etymology,
     senses: e.senses,
+    notes: e.notes,
+    collocations: e.collocations,
   };
 
   const existing = pages.get(slug);

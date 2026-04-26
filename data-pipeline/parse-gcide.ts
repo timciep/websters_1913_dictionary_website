@@ -15,12 +15,29 @@
 import { expandEntities } from './entities.js';
 
 export interface Sense {
-  number?: string;
-  definition: string; // HTML-safe (no <a> yet — that's added later by crossref pass)
-  quotations: { text: string; author?: string }[];
+  number?: string; // top-level sense number from <sn>, e.g. "1.", "2."
+  subSense?: string; // sub-sense letter from <sd>, e.g. "(a)", "(b)" — for multi-def blocks
+  field?: string; // domain label from <fld>, e.g. "(Bot.)", "(Astron.)"
+  definition: string; // may contain <er>...</er> and <i>...</i>; everything else stripped
+  quotations: { text: string; author?: string }[]; // text may contain <i>...</i>
   usage?: string; // expanded <mark> label, e.g. "Obsolete", "Provincial English"
   attribution?: string; // <rj><au> following a def with no inline quote
   source?: string; // e.g. "1913 Webster", "PJC", "WordNet 1.5"
+}
+
+export interface CollocationDef {
+  subSense?: string; // (a) / (b) when a single collocation has multiple <cd> blocks
+  definition: string; // postProcessed; may contain <er>, <i>
+  quotations: { text: string; author?: string }[];
+  attribution?: string; // <au> not paired with an inline quote
+  usage?: string; // expanded <mark>, e.g. "Obsolete"
+}
+
+export interface Collocation {
+  terms: string[]; // one or more variant spellings sharing one definition (from <mcol>)
+  field?: string; // domain label, e.g. "(Cookery)"
+  defs: CollocationDef[];
+  source?: string; // primary source of the surrounding <p> block, e.g. "PJC"
 }
 
 export interface RawEntry {
@@ -30,6 +47,8 @@ export interface RawEntry {
   partOfSpeech?: string;
   etymology?: string;
   senses: Sense[];
+  notes?: { text: string; source?: string; forPhrases?: boolean }[]; // editorial notes; HTML may contain <i>
+  collocations?: Collocation[]; // compound sub-entries from <cs>/<col>/<cd>
 }
 
 // ---------- helpers ----------
@@ -61,9 +80,30 @@ function clean(s: string): string {
     .replace(/\s+([,.;:!?])/g, '$1');
 }
 
-/** Like clean(), but converts <br/ sentinels to newlines (for verse/poetry). */
+// GCIDE tags whose contents should render in italics (matching the typography
+// of the printed Webster's 1913). All are normalised to <i>...</i> after the
+// tag-strip pass so downstream consumers only need to handle a single form.
+//   <ex>/<xex>/<qex>  example word inside a definition or quote
+//   <spn>             scientific name (Latin binomial)
+//   <ets>             etymon (source word in etymology brackets)
+//   <grk>             Greek (or other non-Latin) word
+//   <it>              explicit italic
+//   <altname>/<altsp> alternative name / spelling
+const ITALIC_TAGS = new Set(['ex', 'xex', 'qex', 'spn', 'ets', 'grk', 'it', 'altname', 'altsp']);
+
+function rewriteTags(s: string, keep: Set<string>, italic: Set<string>): string {
+  return s.replace(/<\/?([A-Za-z][A-Za-z0-9]*)([^>]*)>/g, (m, name: string) => {
+    if (italic.has(name)) return m.startsWith('</') ? '</i>' : '<i>';
+    if (keep.has(name)) return m;
+    return '';
+  });
+}
+
+/** Like clean(), but converts <br/ sentinels to newlines (for verse/poetry)
+ *  and preserves italic markup as <i>...</i> spans. */
 function cleanQuote(s: string): string {
-  return normalizeWhitespace(decodeXmlEscapes(stripTags(s)))
+  const rewritten = rewriteTags(s, new Set(), ITALIC_TAGS);
+  return normalizeWhitespace(decodeXmlEscapes(rewritten))
     .replace(/\s*\x00BR\x00\s*/g, '\n')
     .replace(/\s+([,.;:!?])/g, '$1')
     .trim();
@@ -151,8 +191,52 @@ export function parseGcideFile(raw: string): RawEntry[] {
 }
 
 function pushSenseFromBlock(block: string, entry: RawEntry): void {
+  // Source attribution for the whole block. GCIDE marks each block with one or
+  // more <source>...</source> tags. Pick the first non-"+" source as the
+  // primary attribution ("+PJC" means "edited by PJC", not "authored by").
+  const sources = allTags(block, 'source').map((s) => s.trim());
+  const primarySource = sources.find((s) => s && !s.startsWith('+')) ?? sources[0];
+
+  // <note> blocks carry editorial commentary (e.g. the Gender entry's discussion
+  // of historical sex/gender usage). They can appear either as their own
+  // continuation paragraph or alongside a sense — collect them either way, and
+  // tag each with the surrounding block's source so the renderer can flag
+  // modern (PJC, WordNet) notes the same way it flags modern senses.
+  //
+  // A note block that follows the collocations section (no <def>/<cs> of its
+  // own, with collocations already accumulated on the entry) is a continuation
+  // of that section — e.g. the "word square" example for the Word entry.
+  // Tag those so the renderer can render them inside the Phrases details.
+  const noteFollowsCs =
+    !!entry.collocations?.length && !/<def>/.test(block) && !/<cs>/.test(block);
+  for (const noteBody of allTags(block, 'note')) {
+    const text = postProcessDef(noteBody);
+    if (text) {
+      entry.notes ??= [];
+      entry.notes.push({
+        text,
+        source: primarySource || undefined,
+        forPhrases: noteFollowsCs || undefined,
+      });
+    }
+  }
+
+  // <cs>...</cs> = collocation section; one or more compound sub-entries
+  // (<col><b>term</b></col>, <cd>definition</cd>) attached to this headword.
+  for (const csBody of allTags(block, 'cs')) {
+    const cols = parseCollocations(csBody);
+    if (cols.length > 0) {
+      entry.collocations ??= [];
+      for (const c of cols) {
+        if (primarySource) c.source = primarySource;
+        entry.collocations.push(c);
+      }
+    }
+  }
+
   const sn = firstTag(block, 'sn');
-  const def = firstTag(block, 'def');
+  const fld = firstTag(block, 'fld');
+  const defs = collectDefs(block);
 
   // Standard <q>...</q> quotations.
   const quotations: { text: string; author?: string }[] = allTags(block, 'q').map((qBlock) => ({
@@ -164,14 +248,14 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
   }
 
   // The remaining extractions (inline “…” citations, bare <au> attributions,
-  // <mark> usage labels) only make sense for sense-bearing blocks (those with
-  // a <def>). Other blocks like <syn>, <note>, <cs> may contain typographic
-  // quotes or `<au>` references as part of editorial prose, and we don't want
-  // to misattribute those to the previous sense.
+  // <mark> usage labels) only make sense for sense-bearing blocks. Other
+  // blocks like <syn>, <note>, <cs> may contain typographic quotes or `<au>`
+  // references as part of editorial prose, and we don't want to misattribute
+  // those to the previous sense.
   let attribution: string | undefined;
   let usage: string | undefined;
-  if (def) {
-    // Strip the def body (and any <q> body) so we don't pick up quotes that
+  if (defs.length > 0) {
+    // Strip the def bodies and any <q> bodies so we don't pick up quotes that
     // legitimately appear inside def prose.
     const tail = block
       .replace(/<def>[\s\S]*?<\/def>/g, '')
@@ -206,21 +290,24 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
     if (usageMarks.length > 0) usage = expandUsageMarkers(usageMarks);
   }
 
-  // Extract source attribution(s) from the block. GCIDE marks each block with
-  // one or more <source>...</source> tags. We pick the first non-"+" source as
-  // the primary attribution ("+PJC" means "edited by PJC", not "authored by").
-  const sources = allTags(block, 'source').map((s) => s.trim());
-  const primarySource = sources.find((s) => s && !s.startsWith('+')) ?? sources[0];
-
-  if (def) {
-    entry.senses.push({
-      number: sn ? clean(sn) : undefined,
-      // Keep <er> tags so the crossref pass can linkify them; strip everything else.
-      definition: postProcessDef(def),
-      quotations,
-      usage,
-      attribution,
-      source: primarySource || undefined,
+  if (defs.length > 0) {
+    // Multi-def blocks (with <sd>(a)</sd> sub-sense markers) become multiple
+    // senses. Quotations / usage / attribution attach to the LAST sub-sense
+    // (close enough to source order in practice). The parent <sn> sits on
+    // the first sub-sense; the <fld> domain label is shared by all.
+    const baseField = fld ? clean(fld) : undefined;
+    const lastIdx = defs.length - 1;
+    defs.forEach(({ sd, def }, i) => {
+      entry.senses.push({
+        number: i === 0 && sn ? clean(sn) : undefined,
+        subSense: sd ? clean(sd) : undefined,
+        field: baseField,
+        definition: postProcessDef(def),
+        quotations: i === lastIdx ? quotations : [],
+        usage: i === lastIdx ? usage : undefined,
+        attribution: i === lastIdx ? attribution : undefined,
+        source: primarySource || undefined,
+      });
     });
   } else if (quotations.length > 0 && entry.senses.length > 0) {
     // Quotation block attached to the previous sense.
@@ -228,13 +315,38 @@ function pushSenseFromBlock(block: string, entry: RawEntry): void {
   }
 }
 
+// Walk a block sequentially, pairing each <def>...</def> with the most recent
+// preceding <sd>...</sd> (sub-sense marker, e.g. "(a)", "(b)"). Single-def
+// blocks return one entry with sd=undefined.
+function collectDefs(block: string): { sd?: string; def: string }[] {
+  const re = /<(sd|def)>([\s\S]*?)<\/\1>/g;
+  const out: { sd?: string; def: string }[] = [];
+  let pendingSd: string | undefined;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(block)) !== null) {
+    if (m[1] === 'sd') {
+      pendingSd = m[2];
+    } else {
+      out.push({ sd: pendingSd, def: m[2] });
+      pendingSd = undefined;
+    }
+  }
+  return out;
+}
+
 function postProcessDef(def: string): string {
-  // Preserve <er>...</er> tags (cross references), strip everything else.
-  const keep = new Set(['er']);
-  return normalizeWhitespace(decodeXmlEscapes(stripTags(def, keep))).replace(
-    /\s+([,.;:!?])/g,
-    '$1',
+  // GCIDE occasionally omits whitespace between a short abbreviation and an
+  // immediately-following inline tag, producing "F.<ets>genre</ets>" or
+  // "Cf.<er>Foo</er>" — which otherwise render as "F.genre" / "Cf.Foo".
+  // Insert the space before tag rewriting collapses the markup boundary.
+  const spaced = def.replace(
+    /(\b[A-Z][a-z]?\.)(<(?:ets|er|it|ex|xex|qex|spn|grk|altname|altsp)>)/g,
+    '$1 $2',
   );
+  // Preserve <er>...</er> tags (the renderer linkifies them) and italicize
+  // the GCIDE typography tags by rewriting them to <i>...</i>. Strip the rest.
+  const rewritten = rewriteTags(spaced, new Set(['er']), ITALIC_TAGS);
+  return normalizeWhitespace(decodeXmlEscapes(rewritten)).replace(/\s+([,.;:!?])/g, '$1');
 }
 
 // Expansions for GCIDE usage abbreviations found inside <mark>…</mark>. Most
@@ -298,4 +410,108 @@ function expandUsageString(s: string): string {
     );
   }
   return out;
+}
+
+// ---------- collocations ----------
+//
+// A <cs>...</cs> block holds one or more compound sub-entries. Each unit looks
+// like one of:
+//   <col><b>Term</b></col>, <cd>def</cd>
+//   <col><b>Term</b></col> <fld>(Bot.)</fld>, <cd>def</cd>
+//   <mcol><col><b>T1</b></col> <it>or</it> <col><b>T2</b></col></mcol>, <cd>def</cd>
+//   <col><b>Term</b></col>, <sd>(a)</sd> <cd>def1</cd> <sd>(b)</sd> <cd>def2</cd>
+// Multiple units within one <cs> are separated by " -- " in the source.
+
+export function parseCollocations(cs: string): Collocation[] {
+  // Step 1: locate "unit boundaries". A new unit starts at every <mcol> and at
+  // every <col> that is NOT enclosed in an <mcol> (those <col>s are variant
+  // term spellings sharing a single definition).
+  const mcolRanges: { start: number; end: number }[] = [];
+  for (const m of cs.matchAll(/<mcol>[\s\S]*?<\/mcol>/g)) {
+    mcolRanges.push({ start: m.index!, end: m.index! + m[0].length });
+  }
+  const inMcol = (i: number) => mcolRanges.some((r) => i >= r.start && i < r.end);
+
+  const starters: number[] = mcolRanges.map((r) => r.start);
+  for (const m of cs.matchAll(/<col>/g)) {
+    if (!inMcol(m.index!)) starters.push(m.index!);
+  }
+  starters.sort((a, b) => a - b);
+
+  const units: string[] = [];
+  for (let i = 0; i < starters.length; i++) {
+    const end = i + 1 < starters.length ? starters[i + 1] : cs.length;
+    units.push(cs.slice(starters[i], end));
+  }
+
+  return units.map(parseCollocationUnit).filter((c): c is Collocation => c !== null);
+}
+
+function parseCollocationUnit(unit: string): Collocation | null {
+  // Term(s) — every <col>...</col> in this unit, including those grouped in <mcol>.
+  const terms: string[] = [];
+  for (const m of unit.matchAll(/<col>([\s\S]*?)<\/col>/g)) {
+    const t = clean(m[1]);
+    if (t) terms.push(t);
+  }
+  if (terms.length === 0) return null;
+
+  const fldMatch = unit.match(/<fld>([\s\S]*?)<\/fld>/);
+  const field = fldMatch ? clean(fldMatch[1]) : undefined;
+
+  // Walk through (sd? cd) pairs. Each cd's "tail" runs to the next match start,
+  // so quotations / authors / usage labels attach to the def they follow.
+  const cdRe = /(?:<sd>([\s\S]*?)<\/sd>\s*)?<cd>([\s\S]*?)<\/cd>/g;
+  const cdMatches: { sd?: string; def: string; matchEnd: number; tailEnd: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = cdRe.exec(unit)) !== null) {
+    cdMatches.push({
+      sd: m[1],
+      def: m[2],
+      matchEnd: m.index + m[0].length,
+      tailEnd: unit.length,
+    });
+  }
+  if (cdMatches.length === 0) return null;
+  for (let i = 0; i < cdMatches.length - 1; i++) {
+    // Tail ends where the next match begins. Reconstruct that from the next
+    // match's recorded end minus its own match length — easier to just rerun
+    // the regex once more, but since we have matchEnd in order, the next
+    // tailEnd is simply the next match's full-match start position. Recompute
+    // by scanning ahead from the previous matchEnd.
+    const slice = unit.slice(cdMatches[i].matchEnd);
+    const nextMatch = /(?:<sd>[\s\S]*?<\/sd>\s*)?<cd>/.exec(slice);
+    cdMatches[i].tailEnd = nextMatch ? cdMatches[i].matchEnd + nextMatch.index : unit.length;
+  }
+
+  const defs: CollocationDef[] = cdMatches.map((c) => {
+    const tail = unit.slice(c.matchEnd, c.tailEnd);
+
+    const quotations: { text: string; author?: string }[] = [];
+    for (const qm of tail.matchAll(/“([\s\S]+?)”/g)) {
+      const text = cleanQuote(qm[1]);
+      if (text) quotations.push({ text });
+    }
+    const tailAuthors = Array.from(tail.matchAll(/<au>([\s\S]*?)<\/au>/g)).map((am) => clean(am[1]));
+    for (let j = 0; j < quotations.length && j < tailAuthors.length; j++) {
+      if (tailAuthors[j]) quotations[j].author = tailAuthors[j];
+    }
+    const attribution =
+      tailAuthors.length > quotations.length ? tailAuthors[quotations.length] : undefined;
+
+    const tailMarks = Array.from(tail.matchAll(/<mark>([\s\S]*?)<\/mark>/g)).map((am) =>
+      clean(am[1]),
+    );
+    const usage = tailMarks.length > 0 ? expandUsageMarkers(tailMarks) : undefined;
+
+    return {
+      subSense: c.sd ? clean(c.sd) : undefined,
+      definition: postProcessDef(c.def),
+      quotations,
+      attribution,
+      usage,
+    };
+  });
+
+  return { terms, field, defs };
 }

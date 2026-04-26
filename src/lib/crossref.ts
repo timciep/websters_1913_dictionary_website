@@ -13,9 +13,11 @@ export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
 }
 
-// Wrap stray scholarly abbreviations in <abbr> tooltips. Operates on
-// already-escaped HTML text — the replacement contains literal markup, so
-// it must run after escapeHtml, never before.
+// Replace stray scholarly abbreviations with their spelled-out form.
+// Operates on already-escaped HTML text and emits plain text — the
+// replacement is the expansion only, no markup. Initial-caps in the
+// match are preserved on the expansion so "Cf." → "Compare" while
+// "cf." → "compare".
 //
 // Most entries are language abbreviations from the etymology brackets
 // (Webster's 1913 cites cognates in dozens of languages with terse caps).
@@ -59,6 +61,8 @@ const ABBR_HINTS: Array<[RegExp, string]> = [
   [/\bOHG\./g, 'Old High German'],
   [/\bMHG\./g, 'Middle High German'],
   [/\bOS\./g, 'Old Saxon'],
+  [/\bOPruss\./g, 'Old Prussian'],
+  [/\bLith\./g, 'Lithuanian'],
   [/\bIcel\./g, 'Icelandic'],
   [/\bGoth\./g, 'Gothic'],
   [/\bSkr\./g, 'Sanskrit'],
@@ -79,6 +83,95 @@ const ABBR_HINTS: Array<[RegExp, string]> = [
   [/(?<=\[[^\]]*)\bD\.(?!\s*[A-Z])/g, 'Dutch'],
   [/(?<=\[[^\]]*)\bW\.(?!\s*[A-Z])/g, 'Welsh'],
 ];
+
+// Subject-area / field-of-use abbreviations that mark which discipline a
+// sense belongs to, e.g. "(Bot.)", "(Gram. & Pros.)", "(Anat. & Zool.)".
+// Many would collide with author initials, citation sources, or English
+// words ("Her.", "Com. Prayer", "Man. 11"), so we only annotate them
+// inside parens — lookbehind `\([^)]*` requires a preceding `(` with no
+// intervening `)`, lookahead `[^(]*\)` requires a following `)` with no
+// intervening `(`. That covers both "(Bot.)" and the second token in
+// "(Bot. & Zool.)".
+const FIELD_ABBRS: Record<string, string> = {
+  'Agric.': 'agriculture',
+  'Alg.': 'algebra',
+  'Anat.': 'anatomy',
+  'Anthropol.': 'anthropology',
+  'Antiq.': 'antiquities',
+  'Arch.': 'architecture',
+  'Archaol.': 'archaeology',
+  'Arith.': 'arithmetic',
+  'Astrol.': 'astrology',
+  'Astron.': 'astronomy',
+  'Biochem.': 'biochemistry',
+  'Biol.': 'biology',
+  'Bot.': 'botany',
+  'Carp.': 'carpentry',
+  'Chem.': 'chemistry',
+  'Com.': 'commerce',
+  'Crystallog.': 'crystallography',
+  'Eccl.': 'ecclesiastical',
+  'Elec.': 'electricity',
+  'Engin.': 'engineering',
+  'Ethnol.': 'ethnology',
+  'Far.': 'farriery',
+  'Fort.': 'fortification',
+  'Geog.': 'geography',
+  'Geol.': 'geology',
+  'Geom.': 'geometry',
+  'Gram.': 'grammar',
+  'Gun.': 'gunnery',
+  'Her.': 'heraldry',
+  'Horol.': 'horology',
+  'Hort.': 'horticulture',
+  'Mach.': 'machinery',
+  'Manuf.': 'manufacturing',
+  'Math.': 'mathematics',
+  'Mech.': 'mechanics',
+  'Med.': 'medicine',
+  'Metal.': 'metallurgy',
+  'Metaph.': 'metaphysics',
+  'Meteor.': 'meteorology',
+  'Meteorol.': 'meteorology',
+  'Microbiol.': 'microbiology',
+  'Mil.': 'military',
+  'Min.': 'mineralogy',
+  'Mining.': 'mining',
+  'Mus.': 'music',
+  'Myth.': 'mythology',
+  'Naut.': 'nautical',
+  'Nav.': 'navigation',
+  'Numis.': 'numismatics',
+  'Opt.': 'optics',
+  'Paint.': 'painting',
+  'Paleon.': 'paleontology',
+  'Pathol.': 'pathology',
+  'Pharm.': 'pharmacy',
+  'Philol.': 'philology',
+  'Philos.': 'philosophy',
+  'Phon.': 'phonetics',
+  'Photog.': 'photography',
+  'Photom.': 'photometry',
+  'Phren.': 'phrenology',
+  'Phys.': 'physics',
+  'Physics.': 'physics',
+  'Physiol.': 'physiology',
+  'Print.': 'printing',
+  'Pros.': 'prosody',
+  'Psychol.': 'psychology',
+  'R. C. Ch.': 'Roman Catholic Church',
+  'Rhet.': 'rhetoric',
+  'Script.': 'Scripture',
+  'Sculp.': 'sculpture',
+  'Surg.': 'surgery',
+  'Surv.': 'surveying',
+  'Teleg.': 'telegraphy',
+  'Theat.': 'theater',
+  'Theol.': 'theology',
+  'Trig.': 'trigonometry',
+  'Typog.': 'typography',
+  'Zool.': 'zoology',
+};
 
 // Inflection abbreviations that introduce a "form-of" pointer in cross-
 // reference definitions, e.g. "imp. of <er>Run</er>" or "p. p. of <er>See</er>".
@@ -110,21 +203,35 @@ const INFLECTION_RE = new RegExp(
   'g',
 );
 
-function annotateAbbrs(escaped: string): string {
-  let out = escaped;
-  for (const [re, expand] of ABBR_HINTS) {
-    out = out.replace(
-      re,
-      (match) =>
-        `<abbr class="pos-abbr" tabindex="0" data-expand="${expand}">${match}</abbr>`,
-    );
+const FIELD_RE = new RegExp(
+  '(?<=\\([^)]*)(' + Object.keys(FIELD_ABBRS).map(escapeRegex).join('|') + ')(?=[^(]*\\))',
+  'g',
+);
+
+function expandToText(match: string, expansion: string): string {
+  if (/^[A-Z]/.test(match) && /^[a-z]/.test(expansion)) {
+    return expansion[0].toUpperCase() + expansion.slice(1);
   }
+  return expansion;
+}
+
+// `inBracket` extends the etymology-bracket lookbehind across segment
+// boundaries: renderDefinition splits on <i> and <er> tags, so a segment
+// like ", F. <i>genre</i>" loses sight of the opening "[" that lives in
+// an earlier segment. When that's the case, we prepend a synthetic "["
+// so the lookbehind sees it, then slice it back off.
+function expandAbbrs(escaped: string, inBracket = false): string {
+  let out = inBracket ? '[' + escaped : escaped;
+  for (const [re, expand] of ABBR_HINTS) {
+    out = out.replace(re, (match) => expandToText(match, expand));
+  }
+  out = out.replace(FIELD_RE, (match) => expandToText(match, FIELD_ABBRS[match]));
   out = out.replace(INFLECTION_RE, (match) => {
     const expand = expandPos(match);
     if (!expand) return match;
-    return `<abbr class="pos-abbr" tabindex="0" data-expand="${expand}">${match}</abbr>`;
+    return expandToText(match, expand);
   });
-  return out;
+  return inBracket ? out.slice(1) : out;
 }
 
 // GCIDE cross-references sometimes carry `{N}` or `[tag]` suffixes for
@@ -199,41 +306,73 @@ const SLUG_CORRECTIONS: Record<string, string> = {
 
 /**
  * Render a definition string (which may contain `<er>...</er>` cross-reference
- * tags) to HTML. Cross-refs that resolve to a known slug become anchors;
- * unknown ones render as plain italic text.
+ * tags and `<i>...</i>` italic spans) to HTML. Cross-refs that resolve to a
+ * known slug become anchors; unknown ones render as plain italic text.
+ * `<i>` spans are escaped and re-emitted unchanged.
  */
 export function renderDefinition(def: string, knownSlugs: Set<string>): string {
-  // Split on <er>...</er> while keeping the inner text. We escape the
-  // surrounding non-er text and the inner text separately.
   const parts: string[] = [];
-  const re = /<er>([\s\S]*?)<\/er>/g;
+  // Match either <er>...</er> or <i>...</i>. The pipeline normalises every
+  // GCIDE italic tag (<ex>, <xex>, <spn>, <ets>, <grk>, <it>, <altname>,
+  // <altsp>, <qex>) into a single <i> span before this runs.
+  const re = /<(er|i)>([\s\S]*?)<\/\1>/g;
   let lastIndex = 0;
+  let bracketDepth = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(def)) !== null) {
     if (m.index > lastIndex) {
-      parts.push(annotateAbbrs(escapeHtml(def.slice(lastIndex, m.index))));
+      const seg = def.slice(lastIndex, m.index);
+      parts.push(expandAbbrs(escapeHtml(seg), bracketDepth > 0));
+      for (const c of seg) {
+        if (c === '[') bracketDepth++;
+        else if (c === ']' && bracketDepth > 0) bracketDepth--;
+      }
     }
-    const target = m[1];
-    // Strip GCIDE homograph suffixes like {2} or [wn1]
-    const cleaned = target.replace(SUFFIX_RE, '').trim();
-    let slug = slugify(cleaned);
-    let corrected = false;
-    if (slug && !knownSlugs.has(slug) && SLUG_CORRECTIONS[slug]) {
-      slug = SLUG_CORRECTIONS[slug];
-      corrected = true;
-    }
-    if (slug && knownSlugs.has(slug)) {
-      const correction = corrected
-        ? ` <span class="xref-corrected" tabindex="0" data-expand="Corrected from &quot;${escapeHtml(target)}&quot;">&lowast;</span>`
-        : '';
-      parts.push(`<a class="xref" href="/word/${slug}/">${escapeHtml(cleaned)}</a>${correction}`);
+    if (m[1] === 'i') {
+      parts.push(`<i>${escapeHtml(m[2])}</i>`);
     } else {
-      parts.push(`<i>${escapeHtml(cleaned)}</i>`);
+      const target = m[2];
+      // Strip GCIDE homograph suffixes like {2} or [wn1]
+      const cleaned = target.replace(SUFFIX_RE, '').trim();
+      let slug = slugify(cleaned);
+      let corrected = false;
+      if (slug && !knownSlugs.has(slug) && SLUG_CORRECTIONS[slug]) {
+        slug = SLUG_CORRECTIONS[slug];
+        corrected = true;
+      }
+      if (slug && knownSlugs.has(slug)) {
+        const correction = corrected
+          ? ` <span class="xref-corrected" tabindex="0" data-expand="Corrected from &quot;${escapeHtml(target)}&quot;">&lowast;</span>`
+          : '';
+        parts.push(`<a class="xref" href="/word/${slug}/">${escapeHtml(cleaned)}</a>${correction}`);
+      } else {
+        parts.push(`<i>${escapeHtml(cleaned)}</i>`);
+      }
     }
     lastIndex = m.index + m[0].length;
   }
   if (lastIndex < def.length) {
-    parts.push(annotateAbbrs(escapeHtml(def.slice(lastIndex))));
+    parts.push(expandAbbrs(escapeHtml(def.slice(lastIndex)), bracketDepth > 0));
   }
+  // GCIDE <br/ tags survive as a sentinel from data-pipeline/entities.ts.
+  // Notes wrap word-square / verse content where the line breaks are meaningful.
+  return parts.join('').replace(/\s*\x00BR\x00\s*/g, '<br>');
+}
+
+/**
+ * Render text that may contain only `<i>` italic spans (no cross-refs, no
+ * abbr-tooltip processing). Used for quotation bodies and editorial notes.
+ */
+export function renderInlineHtml(text: string): string {
+  const parts: string[] = [];
+  const re = /<i>([\s\S]*?)<\/i>/g;
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > lastIndex) parts.push(escapeHtml(text.slice(lastIndex, m.index)));
+    parts.push(`<i>${escapeHtml(m[1])}</i>`);
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < text.length) parts.push(escapeHtml(text.slice(lastIndex)));
   return parts.join('');
 }

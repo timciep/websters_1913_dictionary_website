@@ -259,10 +259,21 @@ header.site h1 a {
   }
 }
 .entry .usage,
-.entry .attribution {
+.entry .attribution,
+.entry .field,
+.entry .sub-sense {
   color: var(--ink-soft);
   font-style: italic;
   font-size: 0.9em;
+}
+.entry .note {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 1.25rem 0;
+  padding: 0.6rem 0.9rem;
+  background: color-mix(in srgb, var(--rule) 35%, transparent);
+  border-radius: 3px;
 }
 .entry .quote {
   margin: 0.9rem 0 1rem;
@@ -283,6 +294,64 @@ header.site h1 a {
   font-size: 0.85rem;
   color: var(--ink-soft);
   margin-top: 2rem;
+}
+.entry .collocations {
+  margin: 1.5rem 0 0.5rem;
+}
+.entry .collocations-label {
+  font-size: 0.72rem;
+  font-weight: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 0.85rem;
+  cursor: pointer;
+  list-style: none;
+  display: inline-block;
+}
+.entry .collocations-label::-webkit-details-marker {
+  display: none;
+}
+.entry .collocations-label::before {
+  content: '▸';
+  display: inline-block;
+  width: 1em;
+  margin-right: 0.25em;
+  font-size: 0.85em;
+  transition: transform 0.15s ease;
+}
+.entry .collocations[open] > .collocations-label::before {
+  transform: rotate(90deg);
+}
+.entry .collocations-label:hover {
+  color: var(--ink);
+}
+.entry .collocations[open] > .collocations-label {
+  margin-bottom: 0.85rem;
+}
+.entry .collocation {
+  margin: 0.55rem 0 0.55rem 1.25rem;
+  text-indent: -1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.entry .collocation .col-terms b {
+  font-weight: 600;
+}
+.entry .collocation .col-quote {
+  text-indent: 0;
+  margin-left: 0;
+}
+.entry .collocation .col-or {
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.entry .collocation .col-quote {
+  display: block;
+  margin: 0.4rem 0 0.4rem 1rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--rule);
+  font-size: 0.85rem;
 }
 
 /* Search box */
