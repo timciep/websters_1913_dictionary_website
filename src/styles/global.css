@@ -272,13 +272,22 @@ header.site h1 a {
   color: var(--ink-soft);
   font-size: 0.88rem;
   line-height: 1.5;
-  margin: 1.25rem 0 1.25rem 2.1rem;
+  margin: 1rem 0 2rem 2.1rem;
   padding: 0.6rem 0.9rem;
   background: color-mix(in srgb, var(--rule) 35%, transparent);
   border-radius: 3px;
 }
 .entry .note.phrase-note {
   margin-left: 0;
+}
+.entry .sense:has(+ .note) {
+  margin-bottom: 0.5rem;
+}
+.entry .sense + .note {
+  margin-top: 0.5rem;
+}
+.entry .note:has(+ .note) {
+  margin-bottom: 0.5rem;
 }
 @media (max-width: 600px) {
   .entry .sense {
