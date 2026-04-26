@@ -4,6 +4,7 @@
   --ink-soft: #414040;
   --rule: #d8d2c2;
   --accent: #6a3a1a;
+  --later: #b13e2c;
   --link: #8b5e3c;
   --link-hover: #9a5f30;
   --input-bg: white;
@@ -17,6 +18,7 @@
   --ink-soft: #a09a8e;
   --rule: #3a3530;
   --accent: #c8864e;
+  --later: #e07260;
   --link: #c8864e;
   --link-hover: #e0a56a;
   --input-bg: #242120;
@@ -244,8 +246,8 @@ header.site h1 a {
   display: inline-flex;
   vertical-align: middle;
   margin-left: 0.3rem;
-  color: var(--ink-soft);
-  opacity: 0.55;
+  color: var(--later);
+  opacity: 0.85;
 }
 .entry .source-info:hover,
 .entry .source-info:focus {
