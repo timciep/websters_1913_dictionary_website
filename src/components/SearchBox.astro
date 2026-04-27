@@ -57,6 +57,10 @@ import IconSearch from './icons/IconSearch.astro';
         prefix: true,
         fuzzy: 0.15,
         boost: { h: 2 },
+        // MiniSearch defaults rank fuzzy (0.45) above prefix (0.375), so a 1-edit
+        // fuzzy match beats a 1-char prefix extension — "gende" surfaces "genie"
+        // ahead of "gender". Bias toward prefix; keep fuzzy as a typo fallback.
+        weights: { prefix: 1, fuzzy: 0.1 },
       },
     });
     mini.addAll(rows);
@@ -109,6 +113,21 @@ import IconSearch from './icons/IconSearch.astro';
     lastQuery = q;
     if (!q || !mini) { lastHits = []; render([]); return; }
     const hits = mini.search(q) as unknown as Row[];
+    // Promote an exact-headword match to position 1. BM25 deflates the IDF of
+    // common terms ("word" appears as a token in dozens of compound headwords —
+    // Word-blind, Word-catcher, …) so prefix matches against rarer terms like
+    // "wordy" can outscore the literal "Word" entry. Bypass that by trusting
+    // the slug.
+    const exactSlug = slugify(q);
+    if (exactSlug && slugMap?.has(exactSlug)) {
+      const idx = hits.findIndex((r) => r.s === exactSlug);
+      if (idx > 0) {
+        const [exact] = hits.splice(idx, 1);
+        hits.unshift(exact);
+      } else if (idx < 0) {
+        hits.unshift(slugMap.get(exactSlug)!);
+      }
+    }
     lastHits = hits;
     render(hits);
     schedulePerformed(q, hits.length);
