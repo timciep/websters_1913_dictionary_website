@@ -107,7 +107,17 @@ import IconSearch from './icons/IconSearch.astro';
 
   input.addEventListener('focus', () => { void ensureLoaded(); });
 
+  // On touch devices, pin the search bar to the top of the viewport on the
+  // first keystroke per focus — by then iOS's keyboard-up animation has
+  // settled, so we don't race its automatic focus-scroll.
+  let pinnedThisFocus = false;
+  input.addEventListener('blur', () => { pinnedThisFocus = false; });
+
   input.addEventListener('input', async () => {
+    if (!pinnedThisFocus && matchMedia('(hover: none)').matches) {
+      pinnedThisFocus = true;
+      input.closest('.search')?.scrollIntoView({ block: 'start' });
+    }
     await ensureLoaded();
     const q = input.value.trim();
     lastQuery = q;
