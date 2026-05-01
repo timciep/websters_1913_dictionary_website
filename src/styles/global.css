@@ -430,6 +430,11 @@ header.site h1 a {
   box-shadow: 0 4px 16px color-mix(in srgb, var(--ink) 12%, transparent);
   z-index: 10;
 }
+@media (hover: none) {
+  .search ul.results {
+    max-height: 14rem;
+  }
+}
 .search ul.results li {
   padding: 0.5rem 0.85rem;
   border-bottom: 1px solid var(--rule);
