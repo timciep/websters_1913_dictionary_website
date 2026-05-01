@@ -405,7 +405,7 @@ header.site h1 a {
   width: 100%;
   font-family: var(--serif);
   font-size: 1.1rem;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  padding: 0.75rem 2.5rem 0.75rem 2.5rem;
   background: var(--input-bg);
   border: 1px solid var(--rule);
   border-radius: 4px;
@@ -415,6 +415,25 @@ header.site h1 a {
   outline: none;
   border-color: var(--accent);
 }
+.search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.search-clear[hidden] { display: none; }
+.search-clear:hover { color: var(--ink); }
+.search-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .search ul.results {
   list-style: none;
   margin: 0.25rem 0 0;
