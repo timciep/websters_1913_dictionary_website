@@ -50,6 +50,16 @@ body {
   padding: 1.5rem 1.25rem 6rem;
 }
 
+body.browse-wide .container {
+  max-width: 56rem;
+}
+body.browse-wide .container > header.site,
+body.browse-wide .container > footer.site {
+  max-width: var(--max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 a {
   color: var(--link);
   text-decoration: none;
@@ -697,11 +707,11 @@ header.site h1 a {
   list-style: none;
   padding: 0;
   margin: 0 0 1rem;
-  column-width: 14rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
   column-gap: 1.5rem;
 }
 .browse-list li {
-  break-inside: avoid;
   padding: 0.15rem 0;
   font-size: 0.95rem;
   line-height: 1.45;

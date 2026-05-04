@@ -69,7 +69,7 @@ const jsonLd = {
   url: `https://websters1913.timcieplowski.com/browse/${group.letter}/`,
 };
 ---
-<Base title={title} description={description} jsonLd={jsonLd}>
+<Base title={title} description={description} jsonLd={jsonLd} bodyClass="browse-wide">
   <details class="alpha-accordion" slot="header-extra">
     <summary>Browse other letters</summary>
     <AlphaNav current={group.letter} />

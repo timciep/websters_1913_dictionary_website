@@ -8,8 +8,9 @@ interface Props {
   title: string;
   description: string;
   jsonLd?: Record<string, unknown>;
+  bodyClass?: string;
 }
-const { title, description, jsonLd } = Astro.props;
+const { title, description, jsonLd, bodyClass } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 const isHome = Astro.url.pathname === '/';
 const ogImage = new URL('/og-image.png', Astro.site).toString();
@@ -63,7 +64,7 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
       }
     </script>
   </head>
-  <body>
+  <body class={bodyClass}>
     <div class="container">
       <header class="site">
         <div style="display:flex; align-items:center; justify-content:space-between; gap: 1rem;">
