@@ -225,6 +225,36 @@ import IconSearch from './icons/IconSearch.astro';
 
   const WORD_RE = /^[\p{L}\p{M}'’\-]+$/u;
 
+  // Irregular plurals whose singular can't be derived by suffix rules.
+  const IRREGULAR_PLURALS: Record<string, string> = {
+    men: 'man', women: 'woman', children: 'child', people: 'person',
+    feet: 'foot', teeth: 'tooth', geese: 'goose', mice: 'mouse',
+    lice: 'louse', oxen: 'ox', dice: 'die', pence: 'penny',
+  };
+
+  // Given a possibly-plural word, return candidate singular forms to try
+  // against the headword index, most-likely first. Purely heuristic — we
+  // only ever surface a candidate that turns out to be a real headword,
+  // so over-generating is harmless.
+  function singularCandidates(word: string): string[] {
+    const w = word.toLowerCase();
+    const out: string[] = [];
+    const irregular = IRREGULAR_PLURALS[w];
+    if (irregular) out.push(irregular);
+    // berries -> berry, ladies -> lady
+    if (/[^aeiou]ies$/.test(w)) out.push(w.slice(0, -3) + 'y');
+    // leaves -> leaf, knives -> knife, wolves -> wolf
+    if (/ves$/.test(w)) { out.push(w.slice(0, -3) + 'f'); out.push(w.slice(0, -3) + 'fe'); }
+    // boxes -> box, dishes -> dish, churches -> church, buses -> bus
+    if (/(s|x|z|ch|sh)es$/.test(w)) out.push(w.slice(0, -2));
+    // tomatoes -> tomato, heroes -> hero
+    if (/oes$/.test(w)) out.push(w.slice(0, -2));
+    // generic -es -> -e (e.g. houses -> house) and -s -> "" (cats -> cat)
+    if (/es$/.test(w)) out.push(w.slice(0, -1));
+    if (/s$/.test(w) && !/ss$/.test(w)) out.push(w.slice(0, -1));
+    return out;
+  }
+
   function hidePopover() {
     popover.hidden = true;
   }
@@ -263,7 +293,16 @@ import IconSearch from './icons/IconSearch.astro';
     if (!slugMap) { hidePopover(); return; }
 
     const slug = slugify(text);
-    const hit = slug ? slugMap.get(slug) : null;
+    let hit = slug ? slugMap.get(slug) : null;
+    // If the exact form isn't a headword, the selection may be a plural —
+    // fall back to trying singular candidates derived from it.
+    if (!hit) {
+      for (const candidate of singularCandidates(text)) {
+        const candidateSlug = slugify(candidate);
+        const candidateHit = candidateSlug ? slugMap.get(candidateSlug) : null;
+        if (candidateHit) { hit = candidateHit; break; }
+      }
+    }
     if (!hit) { hidePopover(); return; }
 
     popoverLink.textContent = `Look up “${hit.h}”`;
