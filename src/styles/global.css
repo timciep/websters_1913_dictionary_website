@@ -8,6 +8,7 @@
   --link: #8b5e3c;
   --link-hover: #9a5f30;
   --input-bg: white;
+  --heart: #c2456b;
   --serif: 'Iowan Old Style', 'Palatino', 'Georgia', serif;
   --max: 38rem;
 }
@@ -22,6 +23,7 @@
   --link: #c8864e;
   --link-hover: #e0a56a;
   --input-bg: #242120;
+  --heart: #ef8fb0;
 }
 /* [data-theme="dark"] .search input,
 [data-theme="dark"] .search ul.results {
@@ -759,4 +761,62 @@ footer.site p {
 
 footer.site .support {
   font-style: italic;
+}
+
+/* Support block: the footer's visual anchor, deliberately not fine print. */
+.support-card {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--bg));
+}
+/* Once both children can't share a line, stack them — otherwise fit-content
+   resolves to the full available width and the card stops hugging. */
+@media (max-width: 600px) {
+  .support-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+footer.site .support-card-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.support-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 3px;
+  white-space: nowrap;
+  transition: background 0.15s ease-out, border-color 0.15s ease-out;
+}
+.support-card-link svg {
+  flex-shrink: 0;
+  color: var(--heart);
+  fill: currentColor;
+}
+.support-card-link:hover,
+.support-card-link:focus-visible {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-color: var(--accent);
+  outline: none;
 }

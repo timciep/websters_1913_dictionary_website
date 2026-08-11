@@ -4,6 +4,7 @@ import SearchBox from '../components/SearchBox.astro';
 import IconSun from '../components/icons/IconSun.astro';
 import IconMoon from '../components/icons/IconMoon.astro';
 import IconInfo from '../components/icons/IconInfo.astro';
+import IconHeart from '../components/icons/IconHeart.astro';
 interface Props {
   title: string;
   description: string;
@@ -108,6 +109,20 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
         <slot />
       </main>
       <footer class="site">
+        <div class="support-card">
+          <p class="support-card-text">
+            Enjoying the dictionary?
+          </p>
+          <a
+            class="support-card-link"
+            href="https://ko-fi.com/timciep"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <IconHeart width={15} height={15} />
+            <span>Support its upkeep</span>
+          </a>
+        </div>
         <p class="support">
           This site by <a href="https://timcieplowski.com" rel="noopener noreferrer">Tim Cieplowski</a>.
         </p>
@@ -119,9 +134,6 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
           <IconInfo style="display:inline-block;vertical-align:middle;color:var(--later);opacity:0.85;" />
           were added by later GCIDE contributors and are not in the original 1913 edition.
         </p>
-        <p class="support">
-          Enjoying the dictionary? <a href="https://ko-fi.com/timciep" rel="noopener noreferrer">Support its upkeep</a>. 
-          </p>
         <p class="support">
           Contribute <a href="https://github.com/timciep/websters_1913_dictionary_website" rel="noopener noreferrer">on GitHub</a>, or <a rel="noopener noreferrer" href="https://github.com/timciep/websters_1913_dictionary_website/issues">report issues</a>.
         </p>
