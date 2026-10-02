@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import Definition from '../../components/Definition.astro';
 import { loadAllEntries, loadSlugSet, type EntryPage } from '../../lib/entry';
+import { expandPos } from '../../lib/pos';
 
 export async function getStaticPaths() {
   const pages = await loadAllEntries();
@@ -17,7 +18,7 @@ const { page, knownSlugs } = Astro.props;
 
 // Strip markup / collapse whitespace / truncate for <meta name="description">.
 function plain(s: string): string {
-  return s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  return s.replace(/<[^>]+>/g, '').replace(/\s*--\s*/g, ' — ').replace(/\s+/g, ' ').trim();
 }
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
@@ -27,9 +28,12 @@ function truncate(s: string, max: number): string {
 }
 
 const firstSense = page.forms[0]?.senses[0]?.definition ?? '';
-const pos = page.forms[0]?.partOfSpeech;
+const rawPos = page.forms[0]?.partOfSpeech;
+const pos = rawPos ? (expandPos(rawPos) ?? plain(rawPos)) : '';
+// Lead with the headword so search engines see the snippet as relevant to the
+// query and use it instead of pulling arbitrary page text.
 const descBase = firstSense
-  ? `${pos ? `(${plain(pos)}) ` : ''}${plain(firstSense)}`
+  ? `${page.headword}${pos ? ` (${pos})` : ''}: ${plain(firstSense)}`
   : `Definition of ${page.headword} from Webster's Revised Unabridged Dictionary (1913).`;
 const description = truncate(descBase, 155);
 

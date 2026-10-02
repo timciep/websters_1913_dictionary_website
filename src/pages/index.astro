@@ -8,6 +8,13 @@ const formTotal = pages.reduce((n, p) => n + p.forms.length, 0);
 const count = formTotal.toLocaleString('en-US');
 ---
 <Base
+  jsonLd={{
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: "Webster's 1913 Dictionary",
+    alternateName: "Webster's Revised Unabridged Dictionary (1913)",
+    url: new URL('/', Astro.site).toString(),
+  }}
   title="Webster's 1913 Dictionary"
   description={`A complete, searchable copy of Webster's Revised Unabridged Dictionary of 1913 — ${count} headwords with instant autocomplete, clickable cross-references, and spelled-out abbreviations.`}
 >
