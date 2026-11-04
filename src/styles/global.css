@@ -494,6 +494,70 @@ header.site h1 a {
   color: var(--ink-soft);
   margin-top: 0.1rem;
 }
+.search ul.results li.results-more {
+  color: var(--link);
+  font-size: 0.9rem;
+  text-align: center;
+  background: color-mix(in srgb, var(--rule) 25%, var(--input-bg));
+}
+.search ul.results li.results-more:hover {
+  color: var(--link-hover);
+  background: var(--bg);
+}
+
+/* Search results page (/search/?q=) */
+.search-page .search-heading {
+  margin-bottom: 0.25rem;
+  overflow-wrap: anywhere;
+}
+.search-page .search-status {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  margin: 0 0 1.25rem;
+}
+.search-results {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+}
+.search-results li {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+.search-results li:last-child { border-bottom: 0; }
+.search-results a {
+  font-weight: 600;
+}
+.search-results mark {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 0.05em;
+}
+.search-results .pos {
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 0.85rem;
+  margin-left: 0.3rem;
+}
+.search-more {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: var(--link);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.6rem 1rem;
+  width: 100%;
+  cursor: pointer;
+}
+.search-more:hover {
+  color: var(--link-hover);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
+.search-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* Word-selection lookup popover */
 .word-popover {

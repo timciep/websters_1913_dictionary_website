@@ -4,7 +4,12 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   output: 'static',
   site: 'https://websters1913.timcieplowski.com',
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      // The results page is client-rendered from ?q= and marked noindex.
+      filter: (page) => !/\/search\/?$/.test(new URL(page).pathname),
+    }),
+  ],
   build: {
     format: 'directory',
   },

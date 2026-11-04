@@ -28,6 +28,8 @@ original 1913 content from later contributions.
 - **Client-side autocomplete search.** A MiniSearch index over all 124k
   headwords is fetched lazily on first focus of the search box, giving
   prefix-matching autocomplete with a small fuzzy tolerance and no server.
+  The dropdown shows the top ten; `/search/?q=term` lists every match on
+  one page, computed in the browser from the same index.
 - **Linkified cross-references.** `<er>...</er>` tags inside definitions are
   resolved against the full slug set at render time. If the target exists
   the word becomes a link to its entry page; if it doesn't, it falls back
@@ -75,13 +77,15 @@ src/
 ├── lib/
 │   ├── slug.ts          # headword → URL slug (NFKD + ligature expansion)
 │   ├── entry.ts         # types + on-disk loader
-│   └── crossref.ts      # <er>...</er> → <a href="/word/{slug}/">
+│   ├── crossref.ts      # <er>...</er> → <a href="/word/{slug}/">
+│   └── search-client.ts # MiniSearch wrapper shared by SearchBox + /search/
 ├── layouts/Base.astro
 ├── components/
 │   ├── Definition.astro # renders one Entry
 │   └── SearchBox.astro  # client island, MiniSearch autocomplete
 └── pages/
     ├── index.astro      # landing + search
+    ├── search.astro     # /search/?q= full results page (client-rendered, noindex)
     └── word/[slug].astro # getStaticPaths over every entry
 ```
 
@@ -120,7 +124,9 @@ senses get added; only the on-page order changes.
 - **No JS on entry pages.** The only client-side script is the search island.
 - **Search** uses [MiniSearch](https://github.com/lucaong/minisearch) with
   prefix matching and a small fuzzy tolerance. The index (`search-index.json`,
-  ~5 MB / ~1.5 MB gzipped) is fetched lazily on first input focus.
+  ~5 MB / ~1.5 MB gzipped) is fetched lazily on first input focus. Enter
+  jumps straight to an entry only on an exact headword match (or a single
+  candidate); otherwise it opens `/search/?q=…`, which lists every match.
 - **Cross-references** inside definitions are linkified at render time:
   `crossref.ts` looks each target up in the slug set and emits an `<a>` only if
   the page exists, otherwise an italicized span.

@@ -10,8 +10,10 @@ interface Props {
   description: string;
   jsonLd?: Record<string, unknown>;
   bodyClass?: string;
+  /** Keep the page out of search engines (e.g. the client-side results page). */
+  noindex?: boolean;
 }
-const { title, description, jsonLd, bodyClass } = Astro.props;
+const { title, description, jsonLd, bodyClass, noindex = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 const isHome = Astro.url.pathname === '/';
 const ogImage = new URL('/og-image.png', Astro.site).toString();
@@ -24,6 +26,7 @@ const ogImage = new URL('/og-image.png', Astro.site).toString();
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Webster's 1913 Dictionary" />
     <meta property="og:title" content={title} />

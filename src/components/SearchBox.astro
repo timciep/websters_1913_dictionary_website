@@ -24,20 +24,23 @@ import IconSearch from './icons/IconSearch.astro';
 </div>
 
 <script>
-  import MiniSearch from 'minisearch';
   import posthog from 'posthog-js';
   import { slugify } from '../lib/slug';
-
-  interface Row { s: string; h: string; p?: string; d?: string }
+  import {
+    ensureIndex,
+    exactHeadword,
+    lookupSlug,
+    searchHeadwords,
+    searchPageUrl,
+    escapeHtml as escape,
+    type SearchRow as Row,
+  } from '../lib/search-client';
 
   const input = document.getElementById('q') as HTMLInputElement;
   const clearBtn = document.getElementById('q-clear') as HTMLButtonElement;
   const list = document.getElementById('results') as HTMLUListElement;
   const popover = document.getElementById('word-popover') as HTMLDivElement;
   const popoverLink = document.getElementById('word-popover-link') as HTMLAnchorElement;
-  let mini: MiniSearch<Row> | null = null;
-  let rows: Row[] = [];
-  let slugMap: Map<string, Row> | null = null;
   let selected = -1;
   let lastHits: Row[] = [];
   let lastQuery = '';
@@ -49,54 +52,44 @@ import IconSearch from './icons/IconSearch.astro';
   }
 
   async function ensureLoaded() {
-    if (mini) return;
-    const res = await fetch('/search-index.json');
-    rows = (await res.json()) as Row[];
-    slugMap = new Map(rows.map((r) => [r.s, r]));
-    mini = new MiniSearch<Row>({
-      idField: 's',
-      fields: ['h'],
-      storeFields: ['s', 'h', 'p', 'd'],
-      searchOptions: {
-        prefix: true,
-        fuzzy: 0.15,
-        boost: { h: 2 },
-        // MiniSearch defaults rank fuzzy (0.45) above prefix (0.375), so a 1-edit
-        // fuzzy match beats a 1-char prefix extension — "gende" surfaces "genie"
-        // ahead of "gender". Bias toward prefix; keep fuzzy as a typo fallback.
-        weights: { prefix: 1, fuzzy: 0.1 },
-      },
-    });
-    mini.addAll(rows);
+    try {
+      await ensureIndex();
+    } catch {
+      // Network hiccup: leave the box usable; the next keystroke retries.
+    }
   }
 
-  function render(items: Row[]) {
-    if (items.length === 0) {
+  const DROPDOWN_LIMIT = 10;
+
+  // Render the dropdown. `items` are the ranked hits; `q` is the query they
+  // belong to. An empty query hides the list entirely. A non-empty query with
+  // no hits still shows a single row linking to the full results page.
+  function render(items: Row[], q = '') {
+    if (!q) {
       list.hidden = true;
       list.innerHTML = '';
       selected = -1;
       return;
     }
     list.hidden = false;
-    list.innerHTML = items
-      .slice(0, 10)
+    const rows = items
+      .slice(0, DROPDOWN_LIMIT)
       .map((r, i) => {
         const pos = r.p ? `<span class="hit-pos">${escape(r.p)}</span>` : '';
         return `<li role="option" data-slug="${r.s}" data-i="${i}">
           <span class="hit-hw">${escape(r.h)}</span>${pos}
         </li>`;
-      })
-      .join('');
+      });
+    const n = items.length;
+    const label = n === 0
+      ? `No matching headwords — open full search for “${escape(q)}”`
+      : n > DROPDOWN_LIMIT
+        ? `See all ${n.toLocaleString('en-US')} results for “${escape(q)}”`
+        : `See results for “${escape(q)}” on one page`;
+    rows.push(`<li role="option" class="results-more" data-more="1" data-i="${rows.length}">${label}</li>`);
+    list.innerHTML = rows.join('');
     list.scrollTop = 0;
     selected = -1;
-  }
-
-  function escape(s: string): string {
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 
   function go(slug: string, method: 'click' | 'enter', position: number) {
@@ -110,7 +103,29 @@ import IconSearch from './icons/IconSearch.astro';
     window.location.href = `/word/${slug}/`;
   }
 
+  function goSearchPage(method: 'click' | 'enter') {
+    const q = lastQuery;
+    if (!q) return;
+    capture('search_results_page_opened', {
+      query: q,
+      method,
+      result_count: lastHits.length,
+    });
+    window.location.href = searchPageUrl(q);
+  }
+
   input.addEventListener('focus', () => { void ensureLoaded(); });
+
+  // On the results page, mirror the current query into the box so it can be
+  // refined in place.
+  if (window.location.pathname.replace(/\/+$/, '') === '/search') {
+    const initial = new URLSearchParams(window.location.search).get('q')?.trim() ?? '';
+    if (initial) {
+      input.value = initial;
+      lastQuery = initial;
+      clearBtn.hidden = false;
+    }
+  }
 
   // On touch devices, pin the search bar to the top of the viewport on the
   // first keystroke per focus — by then iOS's keyboard-up animation has
@@ -127,25 +142,10 @@ import IconSearch from './icons/IconSearch.astro';
     await ensureLoaded();
     const q = input.value.trim();
     lastQuery = q;
-    if (!q || !mini) { lastHits = []; render([]); return; }
-    const hits = mini.search(q) as unknown as Row[];
-    // Promote an exact-headword match to position 1. BM25 deflates the IDF of
-    // common terms ("word" appears as a token in dozens of compound headwords —
-    // Word-blind, Word-catcher, …) so prefix matches against rarer terms like
-    // "wordy" can outscore the literal "Word" entry. Bypass that by trusting
-    // the slug.
-    const exactSlug = slugify(q);
-    if (exactSlug && slugMap?.has(exactSlug)) {
-      const idx = hits.findIndex((r) => r.s === exactSlug);
-      if (idx > 0) {
-        const [exact] = hits.splice(idx, 1);
-        hits.unshift(exact);
-      } else if (idx < 0) {
-        hits.unshift(slugMap.get(exactSlug)!);
-      }
-    }
+    if (!q) { lastHits = []; render([]); return; }
+    const hits = searchHeadwords(q);
     lastHits = hits;
-    render(hits);
+    render(hits, q);
     schedulePerformed(q, hits.length);
   });
 
@@ -175,10 +175,24 @@ import IconSearch from './icons/IconSearch.astro';
       updateSelection(items);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const index = selected >= 0 ? selected : 0;
-      const target = items[index];
-      const slug = target?.getAttribute('data-slug');
-      if (slug) go(slug, 'enter', index);
+      if (selected >= 0) {
+        // An explicitly highlighted row wins, whatever it is.
+        const target = items[selected];
+        if (target?.hasAttribute('data-more')) { goSearchPage('enter'); return; }
+        const slug = target?.getAttribute('data-slug');
+        if (slug) go(slug, 'enter', selected);
+        return;
+      }
+      const q = input.value.trim();
+      if (!q) return;
+      lastQuery = q;
+      // Nothing highlighted: jump straight to the entry only when the query
+      // names a headword exactly (or there is just one candidate). Otherwise
+      // show every match on the results page instead of guessing.
+      const exact = exactHeadword(q);
+      if (exact) { go(exact.s, 'enter', 0); return; }
+      if (lastHits.length === 1) { go(lastHits[0].s, 'enter', 0); return; }
+      goSearchPage('enter');
     } else if (e.key === 'Escape') {
       render([]);
       input.blur();
@@ -194,6 +208,7 @@ import IconSearch from './icons/IconSearch.astro';
   function navigateFromResult(e: Event) {
     const li = (e.target as HTMLElement).closest('li');
     if (!li) return;
+    if (li.hasAttribute('data-more')) { e.preventDefault(); goSearchPage('click'); return; }
     const slug = li.getAttribute('data-slug');
     const index = Number(li.getAttribute('data-i') ?? '0');
     if (!slug) return;
@@ -290,16 +305,15 @@ import IconSearch from './icons/IconSearch.astro';
     if (anchorEl?.closest('.search, .word-popover')) { hidePopover(); return; }
 
     await ensureLoaded();
-    if (!slugMap) { hidePopover(); return; }
 
     const slug = slugify(text);
-    let hit = slug ? slugMap.get(slug) : null;
+    let hit = slug ? lookupSlug(slug) : undefined;
     // If the exact form isn't a headword, the selection may be a plural —
     // fall back to trying singular candidates derived from it.
     if (!hit) {
       for (const candidate of singularCandidates(text)) {
         const candidateSlug = slugify(candidate);
-        const candidateHit = candidateSlug ? slugMap.get(candidateSlug) : null;
+        const candidateHit = candidateSlug ? lookupSlug(candidateSlug) : undefined;
         if (candidateHit) { hit = candidateHit; break; }
       }
     }

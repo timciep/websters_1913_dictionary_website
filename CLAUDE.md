@@ -274,7 +274,7 @@ and a `[data-theme="dark"]` override block in `global.css`. The mechanism:
 | Add a new page type | New file in `src/pages/`. Don't tangle it with `word/[slug].astro` |
 | Tweak typography | `src/styles/global.css` — single hand-written stylesheet, no CSS framework |
 | Adjust dark-mode colors | `src/styles/global.css` — `[data-theme="dark"]` block. See "Dark mode" section |
-| Change search behavior | `src/components/SearchBox.astro` — vanilla TS in an Astro `<script>`, MiniSearch options live in the `new MiniSearch({...})` call |
+| Change search behavior | `src/lib/search-client.ts` — index loading, MiniSearch options, and ranking (exact-match promotion) shared by the dropdown and the results page. Dropdown UI and Enter-key routing live in `src/components/SearchBox.astro`; the full results page is `src/pages/search.astro` (`/search/?q=`, client-rendered, `noindex`, excluded from the sitemap in `astro.config.mjs`) |
 
 ## Things to avoid
 

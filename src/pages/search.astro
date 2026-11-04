@@ -1,0 +1,130 @@
+---
+// Full search results page: /search/?q=term
+//
+// Static shell; the results are computed in the browser from the same
+// search-index.json the autocomplete box uses (see src/lib/search-client.ts),
+// so there is no server and nothing to generate per query.
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="Search — Webster's 1913 Dictionary"
+  description="Search results from Webster's Revised Unabridged Dictionary (1913)."
+  noindex
+>
+  <div class="search-page">
+    <h2 class="search-heading" id="search-heading">Search</h2>
+    <p class="search-status" id="search-status" aria-live="polite">Loading the word list…</p>
+    <ol class="search-results" id="search-results" hidden></ol>
+    <button id="search-more" class="search-more" type="button" hidden>Show more</button>
+  </div>
+</Base>
+
+<script>
+  import posthog from 'posthog-js';
+  import {
+    ensureIndex,
+    searchHeadwords,
+    escapeHtml,
+    type SearchRow,
+  } from '../lib/search-client';
+
+  const PAGE_SIZE = 50;
+
+  const heading = document.getElementById('search-heading') as HTMLHeadingElement;
+  const status = document.getElementById('search-status') as HTMLParagraphElement;
+  const list = document.getElementById('search-results') as HTMLOListElement;
+  const moreBtn = document.getElementById('search-more') as HTMLButtonElement;
+
+  const q = (new URLSearchParams(window.location.search).get('q') ?? '').trim();
+
+  function capture(event: string, props: Record<string, unknown>) {
+    if (import.meta.env.PROD) posthog.capture(`dictionary_${event}`, props);
+  }
+
+  // Wrap the matched prefix of a headword in <mark> when the headword begins
+  // with the query (ignoring case and accents). Fuzzy hits are left plain.
+  function fold(s: string): string {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+  const qFolded = fold(q);
+  function renderHeadword(h: string): string {
+    const hFolded = fold(h);
+    // Only highlight when folding didn't change string length, so the prefix
+    // offsets line up with the original text.
+    if (qFolded && hFolded.length === h.length && hFolded.startsWith(qFolded)) {
+      const n = q.length;
+      return `<mark>${escapeHtml(h.slice(0, n))}</mark>${escapeHtml(h.slice(n))}`;
+    }
+    return escapeHtml(h);
+  }
+
+  function renderRows(rows: SearchRow[]): string {
+    return rows
+      .map((r) => {
+        const pos = r.p ? ` <span class="pos">${escapeHtml(r.p)}</span>` : '';
+        return `<li><a href="/word/${r.s}/">${renderHeadword(r.h)}</a>${pos}</li>`;
+      })
+      .join('');
+  }
+
+  async function main() {
+    if (!q) {
+      heading.textContent = 'Search';
+      status.textContent = 'Type a word in the search box above to look it up.';
+      return;
+    }
+
+    heading.textContent = `Results for “${q}”`;
+    document.title = `“${q}” — Search — Webster's 1913 Dictionary`;
+
+    try {
+      await ensureIndex();
+    } catch {
+      status.textContent = 'The word list could not be loaded. Check your connection and reload the page.';
+      return;
+    }
+
+    const hits = searchHeadwords(q);
+    capture('search_results_page_viewed', {
+      query: q,
+      query_length: q.length,
+      result_count: hits.length,
+      has_results: hits.length > 0,
+    });
+
+    if (hits.length === 0) {
+      const first = qFolded.match(/[a-z]/)?.[0];
+      const browse = first
+        ? ` You can also <a href="/browse/${first}/">browse the words starting with ${first.toUpperCase()}</a>.`
+        : ' You can also <a href="/browse/">browse the dictionary by letter</a>.';
+      status.innerHTML =
+        `No headwords match “${escapeHtml(q)}”. Check the spelling, or try a shorter prefix.${browse}`;
+      return;
+    }
+
+    const n = hits.length;
+    status.textContent = n === 1
+      ? '1 headword matches.'
+      : `${n.toLocaleString('en-US')} headwords match.`;
+
+    let shown = 0;
+    function showMore() {
+      const next = hits.slice(shown, shown + PAGE_SIZE);
+      list.insertAdjacentHTML('beforeend', renderRows(next));
+      shown += next.length;
+      list.hidden = false;
+      const remaining = n - shown;
+      moreBtn.hidden = remaining <= 0;
+      if (remaining > 0) {
+        moreBtn.textContent = `Show ${Math.min(PAGE_SIZE, remaining)} more (${remaining.toLocaleString('en-US')} remaining)`;
+      }
+    }
+    moreBtn.addEventListener('click', () => {
+      showMore();
+      capture('search_results_show_more', { query: q, shown });
+    });
+    showMore();
+  }
+
+  void main();
+</script>
