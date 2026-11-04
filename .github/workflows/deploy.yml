@@ -54,3 +54,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # ~108k files / ~490 MB; Pages can take well over the 10-minute
+          # default to process it when the service is slow.
+          timeout: 1800000
